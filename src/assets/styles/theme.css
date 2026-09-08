@@ -1,0 +1,226 @@
+@import './bootstrap.config.css';
+
+:root {
+  --bilanko-primary:        #05DF72;
+  --bilanko-primary-hover:  #04C966;
+  --bilanko-primary-active: #03A654;
+  --bilanko-primary-subtle: #E6FCF1;
+
+  --bilanko-positive:        #065F46;
+  --bilanko-positive-subtle: #D1FAE5;
+  --bilanko-negative:        #DC2626;
+  --bilanko-negative-subtle: #FEE2E2;
+  --bilanko-accent:          #D97706;
+  --bilanko-accent-subtle:   #FEF3C7;
+
+  --bilanko-background:      #FFFFFF;
+  --bilanko-surface:         #F0F7F4;
+  --bilanko-border:          #E2EFE9;
+  --bilanko-text:            #111827;
+  --bilanko-text-muted:      #526E60;
+  --bilanko-on-brand:        #FFFFFF;
+
+  --color-primary:        var(--bilanko-primary);
+  --color-primary-hover:  var(--bilanko-primary-hover);
+  --color-primary-active: var(--bilanko-primary-active);
+  --color-primary-subtle: var(--bilanko-primary-subtle);
+
+  --color-positive:        var(--bilanko-positive);
+  --color-positive-subtle: var(--bilanko-positive-subtle);
+  --color-negative:        var(--bilanko-negative);
+  --color-negative-subtle: var(--bilanko-negative-subtle);
+  --color-accent:          var(--bilanko-accent);
+  --color-accent-subtle:   var(--bilanko-accent-subtle);
+
+  --color-background: var(--bilanko-background);
+  --color-surface:    var(--bilanko-surface);
+  --color-border:     var(--bilanko-border);
+  --color-text:       var(--bilanko-text);
+  --color-text-muted: var(--bilanko-text-muted);
+  --color-on-brand:   var(--bilanko-on-brand);
+
+  --font-family-base: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-feature-tabular: "tnum" 1, "lnum" 1;
+
+  --radius-base: 5px;
+  --radius-stamp: 50%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary:        #05DF72;
+    --color-primary-hover:  #33E78E;
+    --color-primary-active: #05DF72;
+    --color-primary-subtle: #013B1E;
+
+    --color-positive:        #34D399;
+    --color-positive-subtle: #064E3B;
+    --color-negative:        #F87171;
+    --color-negative-subtle: #451A1A;
+    --color-accent:          #FBBF24;
+    --color-accent-subtle:   #451A03;
+
+    --color-background: #0C1310;
+    --color-surface:    #141F1A;
+    --color-border:     #23352C;
+    --color-text:       #F0FDF4;
+    --color-text-muted: #83A393;
+    --color-on-brand:   #022C22;
+  }
+}
+
+[data-theme="dark"],
+[data-bs-theme="dark"] {
+  --color-primary:        #05DF72;
+  --color-primary-hover:  #33E78E;
+  --color-primary-active: #05DF72;
+  --color-primary-subtle: #013B1E;
+
+  --color-positive:        #34D399;
+  --color-positive-subtle: #064E3B;
+
+  --color-negative:        #F87171;
+  --color-negative-subtle: #451A1A;
+
+  --color-accent:        #FBBF24;
+  --color-accent-subtle: #451A03;
+
+  --color-background: #0C1310;
+  --color-surface:    #141F1A;
+  --color-border:     #23352C;
+
+  --color-text:       #F0FDF4;
+  --color-text-muted: #83A393;
+  --color-on-brand:   #022C22;
+}
+
+[data-theme="light"],
+[data-bs-theme="light"] {
+  --color-primary:        var(--bilanko-primary);
+  --color-primary-hover:  var(--bilanko-primary-hover);
+  --color-primary-active: var(--bilanko-primary-active);
+  --color-primary-subtle: var(--bilanko-primary-subtle);
+  --color-positive:        var(--bilanko-positive);
+  --color-positive-subtle: var(--bilanko-positive-subtle);
+  --color-negative:        var(--bilanko-negative);
+  --color-negative-subtle: var(--bilanko-negative-subtle);
+  --color-accent:          var(--bilanko-accent);
+  --color-accent-subtle:   var(--bilanko-accent-subtle);
+  --color-background:      var(--bilanko-background);
+  --color-surface:         var(--bilanko-surface);
+  --color-border:          var(--bilanko-border);
+  --color-text:            var(--bilanko-text);
+  --color-text-muted:      var(--bilanko-text-muted);
+  --color-on-brand:        var(--bilanko-on-brand);
+}
+
+*, *::placeholder {
+  font-family: "Plus Jakarta Sans", var(--font-family-base);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+h1, h2, h3, h4, h5, h6,
+.bilanko-title {
+  font-weight: var(--font-weight-bold);
+}
+
+.bilanko-amount {
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--font-feature-tabular);
+  text-align: right;
+}
+.bilanko-amount--positive { color: var(--color-positive); }
+.bilanko-amount--negative { color: var(--color-negative); }
+
+.bilanko-ledger-list > * + * {
+  border-top: 1px solid var(--color-border);
+}
+.bilanko-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .75rem 0;
+}
+
+.bilanko-radius,
+button, input, select, textarea, .card, .btn {
+  border-radius: var(--radius-base);
+}
+
+.bilanko-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-stamp);
+  border: 2px solid currentColor;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.bilanko-stamp--complete { color: var(--color-positive); }
+.bilanko-stamp--incomplete { color: var(--color-negative); }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--color-text);
+}
+
+table, th, td,
+h1, h2, h3, h4, h5, h6,
+p, span, label, strong, small, li {
+  color: inherit;
+}
+
+.modal-content,
+.confirm-dialog,
+.bilanko-form-card {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+
+
+/* src/assets/styles/theme.css - Ajouter à la fin */
+
+/* ============================================================
+   MODE COMPACT — réduit réellement les espaces
+   ============================================================ */
+[data-compact="true"] .bk-card,
+[data-compact="true"] .bk-settings__content,
+[data-compact="true"] .content {
+  padding: 0.85rem !important;
+}
+
+[data-compact="true"] .bk-table tbody td,
+[data-compact="true"] .bk-table thead th,
+[data-compact="true"] .registry-table td,
+[data-compact="true"] .registry-table th {
+  padding: 0.5rem 0.6rem !important;
+}
+
+[data-compact="true"] .bk-dashboard {
+  gap: 8px !important;
+}
+
+[data-compact="true"] .bk-kpi-card,
+[data-compact="true"] .bk-panel {
+  padding: 8px !important;
+}
+
+[data-compact="true"] .bk-quick-action {
+  min-height: 48px !important;
+  padding: 6px 10px !important;
+}
