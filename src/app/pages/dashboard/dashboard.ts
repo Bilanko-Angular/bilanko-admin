@@ -1,6 +1,7 @@
-import { Component, AfterViewInit, ElementRef, ViewChild, inject } from '@angular/core';
+import { Component, AfterViewInit, ElementRef, ViewChild, inject, computed } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
 import { DashboardService, Kpi, RecentUser } from '../../services/dashboard.service';
+import { UserService } from '../../services/user.service';
 
 Chart.register(...registerables);
 
@@ -13,10 +14,14 @@ Chart.register(...registerables);
 })
 export class Dashboard implements AfterViewInit {
   private dashboardService = inject(DashboardService);
+  private userService = inject(UserService);
   @ViewChild('evolutionChart') chartRef!: ElementRef<HTMLCanvasElement>;
 
   kpis: Kpi[] = this.dashboardService.getKpis();
   recentUsers: RecentUser[] = this.dashboardService.getRecentUsers();
+
+  // Nombre total d'utilisateurs (réel)
+  totalUsers = computed(() => this.userService.list().length);
 
   ngAfterViewInit() {
     const data = this.dashboardService.getSalesEvolution();
