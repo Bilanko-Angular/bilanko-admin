@@ -1,21 +1,43 @@
 <header class="bk-header">
+  <!-- Bouton menu (burger) -->
   <button class="bk-header__menu-btn" (click)="toggleMenu.emit()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
 
+  <!-- Titre de la page -->
   <div class="bk-header-info">
     <h1 class="bk-header-title">{{ pageTitle }}</h1>
   </div>
 
+  <!-- Barre de recherche -->
+  <div class="bk-header-search">
+    <div class="input-group">
+      <span class="input-group-text"><span class="material-icons">search</span></span>
+      <input
+        type="search"
+        class="form-control"
+        placeholder="Rechercher..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearch($event)"
+      />
+    </div>
+  </div>
+
+  <!-- Actions -->
   <div class="bk-header-actions">
+    <!-- Thème -->
     <button class="bk-header__action-btn" (click)="themeService.toggle()" title="Thème">
       <span class="material-icons">
         {{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}
       </span>
     </button>
 
+    <!-- Notifications -->
+    <app-notifications-bell />
+
+    <!-- Profil -->
     <div class="bk-profile-wrapper">
-      <div class="bk-avatar-wrapper" (click)="profileOpen.set(!profileOpen())">
+      <div class="bk-avatar-wrapper" (click)="toggleProfile()">
         <span class="bk-avatar">
           <span class="avatar-placeholder">A</span>
           <span class="bk-avatar__dot"></span>

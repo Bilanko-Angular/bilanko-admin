@@ -160,3 +160,47 @@
   .bk-header { padding: 0.35rem 0.75rem; min-height: 56px; }
   .bk-header-title { font-size: 0.95rem; }
 }
+
+
+/* Ajouter à la fin du fichier existant */
+.bk-header-search {
+  flex: 1;
+  max-width: 380px;
+  min-width: 120px;
+}
+.bk-header-search .input-group {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.bk-header-search .input-group:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+.bk-header-search .input-group-text {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 0 0 0 0.6rem;
+}
+.bk-header-search .input-group-text .material-icons {
+  font-size: 1.1rem;
+}
+.bk-header-search .form-control {
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  height: 36px;
+}
+.bk-header-search .form-control:focus {
+  box-shadow: none;
+}
+@media (max-width: 1024px) {
+  .bk-header-search {
+    display: none;
+  }
+}

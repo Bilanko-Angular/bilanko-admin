@@ -27,6 +27,10 @@ export class UserService {
     this.users.update(list => list.map(u => (u.id === id ? { ...u, ...changes } : u)));
   }
 
+  add(user: AdminUser) {
+  this.users.update(list => [...list, user]);
+}
+
   toggleBlock(id: number) {
     this.users.update(list =>
       list.map(u => (u.id === id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u))

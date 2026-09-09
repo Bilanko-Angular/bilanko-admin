@@ -13,10 +13,7 @@
         <div class="bk-kpi-card__body">
           <p class="bk-kpi-card__label">{{ kpi.label }}</p>
           <h3 class="bk-kpi-card__value">{{ kpi.value }}</h3>
-          <span
-            class="bk-kpi-card__trend"
-            [class.bk-kpi-card__trend--negative]="!kpi.trendPositive"
-          >
+          <span class="bk-kpi-card__trend" [class.bk-kpi-card__trend--negative]="!kpi.trendPositive">
             {{ kpi.trend }}
           </span>
         </div>
