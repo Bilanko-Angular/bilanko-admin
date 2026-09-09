@@ -1,1 +1,86 @@
-<p>users works!</p>
+<div class="bk-page">
+  <div class="mb-4">
+    <h1 class="bk-page__title">Utilisateurs</h1>
+    <p class="text-muted mb-0">{{ users().length }} utilisateur(s) au total</p>
+  </div>
+
+  <div class="bk-card p-0">
+    <table class="bk-table">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Téléphone</th>
+          <th>Statut</th>
+          <th>Inscrit le</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="bk-simple-list__avatar">{{ initial(user.name) }}</div>
+                <div>
+                  <p class="mb-0 fw-medium small">{{ user.name }}</p>
+                  <p class="mb-0 text-muted" style="font-size:.78rem">{{ user.email }}</p>
+                </div>
+              </div>
+            </td>
+            <td>{{ user.phone }}</td>
+            <td>
+              <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
+                {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
+              </span>
+            </td>
+            <td>{{ user.createdAt }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <button class="bk-icon-btn" title="Modifier" (click)="openEdit(user)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="bk-icon-btn" title="Bloquer / débloquer" (click)="toggleBlock(user)">
+                  <span class="material-icons">{{ user.status === 'active' ? 'block' : 'lock_open' }}</span>
+                </button>
+                <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(user)">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="text-center text-muted py-4">Aucun utilisateur</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (editingUser(); as user) {
+  <div class="bk-modal-backdrop" (click)="closeEdit()">
+    <div class="bk-modal" (click)="$event.stopPropagation()">
+      <div class="bk-modal__header">
+        <h5 class="mb-0">Modifier l'utilisateur</h5>
+        <button class="bk-icon-btn" (click)="closeEdit()"><span class="material-icons">close</span></button>
+      </div>
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="bk-modal__body d-flex flex-column gap-3">
+        <div>
+          <label class="form-label bk-form-label">Nom complet</label>
+          <input class="form-control bk-input-plain" formControlName="name">
+        </div>
+        <div>
+          <label class="form-label bk-form-label">Email</label>
+          <input class="form-control bk-input-plain" formControlName="email">
+        </div>
+        <div>
+          <label class="form-label bk-form-label">Téléphone</label>
+          <input class="form-control bk-input-plain" formControlName="phone">
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

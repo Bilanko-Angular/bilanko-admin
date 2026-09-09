@@ -7,7 +7,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
   templateUrl: './admin-aside.html',
-  styleUrls: ['./admin-aside.css']
+  styleUrls: ['./admin-aside.css'],
 })
 export class AdminAsideComponent {
   private auth = inject(AuthService);

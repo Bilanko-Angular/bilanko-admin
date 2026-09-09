@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -8,7 +8,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   templateUrl: './login.html',
-  styleUrls: ['./login.css']
+  styleUrl: './login.css',
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
@@ -17,11 +17,16 @@ export class LoginComponent {
 
   loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   error: string | null = null;
   isLoading = false;
+  showPassword = signal(false);
+
+  togglePassword() {
+    this.showPassword.update(v => !v);
+  }
 
   onSubmit() {
     if (this.loginForm.invalid) {
@@ -39,7 +44,7 @@ export class LoginComponent {
       error: (err) => {
         this.isLoading = false;
         this.error = err.error?.message || 'Identifiants incorrects';
-      }
+      },
     });
   }
 }

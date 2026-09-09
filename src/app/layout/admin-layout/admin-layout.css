@@ -1,21 +1,14 @@
-.layout {
-  display: flex;
-  height: 100vh;
+.bk-shell {
+  min-height: 100vh;
   background-color: var(--color-background);
 }
 
-.layout .main-section {
-  flex: 1;
-  min-width: 0;
+.bk-shell__main {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-background);
+  min-width: 0;
 }
 
-.layout .content {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  background-color: var(--color-background);
-  padding: 1.25rem 1.5rem;
+.bk-shell__content {
+  padding: 1.5rem;
 }
