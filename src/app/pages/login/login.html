@@ -1,1 +1,74 @@
-<p>login works!</p>
+<div class="auth-container">
+  <div class="auth-decoration">
+    <div class="auth-decoration-overlay"></div>
+    <div class="auth-decoration-content">
+      <div class="auth-brand d-flex align-items-center gap-2 mb-4">
+        <span class="auth-brand-mark d-inline-flex align-items-center justify-content-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/>
+          </svg>
+        </span>
+        <span class="auth-brand-name fs-5 fw-bold text-white">Bilanko Admin</span>
+      </div>
+      <h2 class="auth-decoration-title text-white fw-bold">Administration</h2>
+      <p class="auth-decoration-text text-white-50">Connectez-vous pour gérer la plateforme</p>
+    </div>
+  </div>
+  <div class="auth-form-panel d-flex align-items-center justify-content-center">
+    <div class="auth-form-wrapper position-relative">
+      <div class="auth-header mb-4">
+        <h1 class="bk-auth-title">Connexion administrateur</h1>
+        <p class="bk-auth-subtitle text-muted mb-0">Accédez à votre espace d'administration</p>
+      </div>
+      @if (error) {
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3">
+          <span class="material-icons fs-6">error_outline</span>
+          <span class="small">{{ error }}</span>
+        </div>
+      }
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="d-flex flex-column gap-3">
+        <div class="mb-0">
+          <label for="email" class="form-label bk-form-label">Email</label>
+          <div class="input-group bk-input-group">
+            <span class="input-group-text bk-input-icon"><span class="material-icons fs-6">email</span></span>
+            <input type="email" id="email" class="form-control bk-input" placeholder="admin@bilanko.com" formControlName="email">
+          </div>
+          @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('required')) {
+            <div class="bk-field-error d-flex align-items-center gap-1 mt-1">
+              <span class="material-icons" style="font-size:.9rem">error_outline</span>
+              <small>L'email est requis</small>
+            </div>
+          }
+          @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')) {
+            <div class="bk-field-error d-flex align-items-center gap-1 mt-1">
+              <span class="material-icons" style="font-size:.9rem">error_outline</span>
+              <small>Email invalide</small>
+            </div>
+          }
+        </div>
+        <div class="mb-0">
+          <label for="password" class="form-label bk-form-label">Mot de passe</label>
+          <div class="input-group bk-input-group">
+            <span class="input-group-text bk-input-icon"><span class="material-icons fs-6">lock</span></span>
+            <input type="password" id="password" class="form-control bk-input" placeholder="••••••••" formControlName="password">
+          </div>
+          @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')) {
+            <div class="bk-field-error d-flex align-items-center gap-1 mt-1">
+              <span class="material-icons" style="font-size:.9rem">error_outline</span>
+              <small>Le mot de passe est requis</small>
+            </div>
+          }
+        </div>
+        <button type="submit" class="btn bk-btn-submit w-100 d-flex align-items-center justify-content-center gap-2" [disabled]="loginForm.invalid || isLoading">
+          @if (isLoading) {
+            <span class="bk-spinner"></span>
+            <span>Connexion...</span>
+          } @else {
+            <span>Se connecter</span>
+            <span class="material-icons" style="font-size:1.1rem">arrow_forward</span>
+          }
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  background-color: var(--color-background);
+}
+
+.layout .main-section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background);
+}
+
+.layout .content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background-color: var(--color-background);
+  padding: 1.25rem 1.5rem;
+}

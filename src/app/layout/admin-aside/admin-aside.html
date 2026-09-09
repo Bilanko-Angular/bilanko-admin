@@ -1,1 +1,23 @@
-<p>admin-aside works!</p>
+<aside class="bk-aside">
+  <div class="bk-aside-header">
+    <div class="d-flex align-items-center gap-3">
+      <img src="assets/images/logo.png" alt="Logo" style="width: 36px; height: 36px;">
+      <span class="fs-5 fw-bold" style="color: var(--color-text);">Bilanko Admin</span>
+    </div>
+  </div>
+  <nav class="bk-aside-nav">
+    <ul class="nav flex-column gap-1">
+      <li><a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a></li>
+      <li><a routerLink="/users" routerLinkActive="active" class="nav-link">Utilisateurs</a></li>
+      <li><a routerLink="/products" routerLinkActive="active" class="nav-link">Produits</a></li>
+      <li><a routerLink="/charges" routerLinkActive="active" class="nav-link">Charges</a></li>
+      <li><a routerLink="/sales" routerLinkActive="active" class="nav-link">Ventes</a></li>
+      <li><a routerLink="/categories" routerLinkActive="active" class="nav-link">Catégories</a></li>
+      <li><a routerLink="/documents" routerLinkActive="active" class="nav-link">Documents</a></li>
+      <li><a routerLink="/messaging" routerLinkActive="active" class="nav-link">Messagerie</a></li>
+    </ul>
+  </nav>
+  <div class="bk-aside-footer">
+    <button class="btn btn-danger w-100" (click)="logout()">Déconnexion</button>
+  </div>
+</aside>
