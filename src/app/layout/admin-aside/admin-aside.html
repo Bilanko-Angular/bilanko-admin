@@ -1,0 +1,67 @@
+<aside class="bk-aside">
+  <div class="bk-aside-header">
+    <div class="d-flex align-items-center gap-3">
+      <img src="assets/images/logo.png" alt="Logo" class="bk-aside__logo" />
+      <span class="fs-5 fw-bold" style="color: var(--color-text);">Bilanko Admin</span>
+    </div>
+  </div>
+
+  <nav class="bk-aside-nav">
+    <ul class="nav flex-column gap-1">
+      <li class="nav-item">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">dashboard</span>
+          <span>Tableau de bord</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/users" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">group</span>
+          <span>Utilisateurs</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/products" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">inventory_2</span>
+          <span>Produits</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/charges" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">account_balance_wallet</span>
+          <span>Charges</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/sales" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">shopping_cart</span>
+          <span>Ventes</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/categories" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">category</span>
+          <span>Catégories</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/documents" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">description</span>
+          <span>Documents</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/messaging" routerLinkActive="active" class="nav-link d-flex align-items-center gap-3 px-3 py-2">
+          <span class="material-icons">chat</span>
+          <span>Messagerie</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="bk-aside-footer">
+    <button class="btn btn-danger w-100" (click)="logout()">
+      <span class="material-icons">logout</span> Déconnexion
+    </button>
+  </div>
+</aside>

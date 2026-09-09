@@ -1,0 +1,52 @@
+<div class="bk-page">
+  <div class="mb-4">
+    <h1 class="bk-page__title">Tableau de bord</h1>
+    <p class="text-muted mb-0">Vue d'ensemble de l'activité</p>
+  </div>
+
+  <div class="bk-kpi-grid mb-4">
+    @for (kpi of kpis; track kpi.label) {
+      <div class="bk-kpi-card">
+        <div class="bk-kpi-card__icon">
+          <span class="material-icons">{{ kpi.icon }}</span>
+        </div>
+        <div class="bk-kpi-card__body">
+          <p class="bk-kpi-card__label">{{ kpi.label }}</p>
+          <h3 class="bk-kpi-card__value">{{ kpi.value }}</h3>
+          <span
+            class="bk-kpi-card__trend"
+            [class.bk-kpi-card__trend--negative]="!kpi.trendPositive"
+          >
+            {{ kpi.trend }}
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="bk-card">
+        <h5 class="bk-card__title">Évolution des ventes</h5>
+        <canvas #evolutionChart height="110"></canvas>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="bk-card">
+        <h5 class="bk-card__title">Utilisateurs récents</h5>
+        <ul class="bk-simple-list">
+          @for (user of recentUsers; track user.email) {
+            <li class="bk-simple-list__item">
+              <div class="bk-simple-list__avatar">{{ initial(user.name) }}</div>
+              <div class="flex-grow-1">
+                <p class="mb-0 small fw-medium">{{ user.name }}</p>
+                <p class="mb-0 small text-muted">{{ user.email }}</p>
+              </div>
+              <span class="small text-muted">{{ user.date }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
