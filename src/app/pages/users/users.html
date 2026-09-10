@@ -1,54 +1,103 @@
-<div class="bk-page">
-  <!-- En-tête avec compteur -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+<div class="bk-users">
+
+  <!-- ══════ EN-TÊTE ══════ -->
+  <div class="bk-users__header">
     <div>
-      <h1 class="bk-page__title">Utilisateurs</h1>
-      <p class="text-muted mb-0">{{ filteredUsers().length }} utilisateur(s)</p>
+      <h1 class="bk-users__title">Gestion des utilisateurs</h1>
+      <p class="bk-users__subtitle">
+        Gérez les comptes, les rôles et les accès à la plateforme Bilanko.
+      </p>
     </div>
+    <button class="btn btn-primary bk-btn-add" (click)="openAdd()">
+      <span class="material-icons">person_add</span> Nouvel utilisateur
+    </button>
+  </div>
 
-    <!-- Barre d'outils : alignée horizontalement -->
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <!-- Recherche -->
-      <div class="input-group" style="max-width: 240px;">
-        <span class="input-group-text"><span class="material-icons">search</span></span>
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Rechercher..."
-          [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
-        />
-        @if (searchTerm()) {
-          <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
-            <span class="material-icons" style="font-size: 1rem;">close</span>
-          </button>
-        }
+  <!-- ══════ STATISTIQUES ══════ -->
+  <div class="bk-stats">
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">group</span></div>
+      <div>
+        <div class="bk-stat__label">Total utilisateurs</div>
+        <div class="bk-stat__value">{{ stats().total }}</div>
       </div>
-
-      <!-- Filtre statut -->
-      <select class="form-select" style="width: auto; min-width: 140px;" [(ngModel)]="statusFilter" (ngModelChange)="currentPage.set(1)">
-        <option value="all">Tous les statuts</option>
-        <option value="active">Actifs</option>
-        <option value="blocked">Bloqués</option>
-      </select>
-
-      <!-- Bouton Ajouter -->
-      <button class="btn btn-primary" (click)="openAdd()">
-        <span class="material-icons">add</span> Ajouter
-      </button>
+    </div>
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">verified_user</span></div>
+      <div>
+        <div class="bk-stat__label">Comptes actifs</div>
+        <div class="bk-stat__value">{{ stats().active }}</div>
+      </div>
+    </div>
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--red"><span class="material-icons">block</span></div>
+      <div>
+        <div class="bk-stat__label">Comptes bloqués</div>
+        <div class="bk-stat__value">{{ stats().blocked }}</div>
+      </div>
+    </div>
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">person_add</span></div>
+      <div>
+        <div class="bk-stat__label">Nouveaux ce mois</div>
+        <div class="bk-stat__value">{{ stats().newThisMonth }}</div>
+      </div>
     </div>
   </div>
 
-  <!-- Tableau -->
-  <div class="bk-card p-0">
+  <!-- ══════ BARRE D'OUTILS ══════ -->
+  <div class="bk-toolbar">
+    <div class="bk-toolbar__search">
+      <span class="material-icons">search</span>
+      <input
+        type="text"
+        placeholder="Rechercher par nom, email, ville..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+      />
+      @if (searchTerm()) {
+        <button type="button" (click)="clearSearch()" title="Effacer">
+          <span class="material-icons">close</span>
+        </button>
+      }
+    </div>
+
+    <select class="bk-toolbar__select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage.set(1)">
+      <option value="all">Tous les statuts</option>
+      <option value="active">Actifs</option>
+      <option value="blocked">Bloqués</option>
+    </select>
+
+    <select class="bk-toolbar__select" [(ngModel)]="roleFilter" (ngModelChange)="currentPage.set(1)">
+      <option value="all">Tous les rôles</option>
+      <option value="ADMIN">Administrateur</option>
+      <option value="MANAGER">Gestionnaire</option>
+      <option value="USER">Utilisateur</option>
+    </select>
+
+    @if (searchTerm() || statusFilter() !== 'all' || roleFilter() !== 'all') {
+      <button class="bk-btn-reset" (click)="clearFilters()">
+        <span class="material-icons">filter_alt_off</span> Réinitialiser
+      </button>
+    }
+
+    <button class="bk-btn-export" (click)="exportCSV()">
+      <span class="material-icons">download</span> Exporter
+    </button>
+  </div>
+
+  <!-- ══════ TABLEAU ══════ -->
+  <div class="bk-table-card">
     <div class="table-responsive">
       <table class="bk-table">
         <thead>
           <tr>
             <th>Utilisateur</th>
-            <th>Téléphone</th>
+            <th>Rôle</th>
+            <th>Ville</th>
+            <th class="num">Produits</th>
             <th>Statut</th>
-            <th>Inscrit le</th>
+            <th>Dernière connexion</th>
             <th class="text-end">Actions</th>
           </tr>
         </thead>
@@ -56,28 +105,41 @@
           @for (user of paginatedUsers(); track user.id) {
             <tr>
               <td>
-                <div class="d-flex align-items-center gap-2">
-                  <div class="bk-simple-list__avatar">{{ initial(user.name) }}</div>
-                  <div>
-                    <p class="mb-0 fw-medium small">{{ user.name }}</p>
-                    <p class="mb-0 text-muted" style="font-size:.78rem">{{ user.email }}</p>
+                <div class="bk-user-cell">
+                  <div class="bk-avatar-lg" [style.background]="avatarColor(user.name)">
+                    {{ initial(user.name) }}
+                  </div>
+                  <div class="bk-user-info">
+                    <div class="bk-user-name">{{ user.name }}</div>
+                    <div class="bk-user-email">{{ user.email }}</div>
+                    <div class="bk-user-phone">{{ user.phone }}</div>
                   </div>
                 </div>
               </td>
-              <td>{{ user.phone }}</td>
+              <td>
+                <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">
+                  {{ roleLabel(user.role) }}
+                </span>
+              </td>
+              <td class="bk-city">{{ user.city }}</td>
+              <td class="num">{{ user.productsCount }}</td>
               <td>
                 <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
+                  <span class="dot"></span>
                   {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
                 </span>
               </td>
-              <td>{{ user.createdAt }}</td>
+              <td class="bk-last-login">{{ user.lastLogin }}</td>
               <td class="text-end">
-                <div class="d-inline-flex gap-1">
+                <div class="bk-actions">
+                  <button class="bk-icon-btn" title="Voir les détails" (click)="viewUser(user)">
+                    <span class="material-icons">visibility</span>
+                  </button>
                   <button class="bk-icon-btn" title="Modifier" (click)="openEdit(user)">
                     <span class="material-icons">edit</span>
                   </button>
-                  <button class="bk-icon-btn" title="Bloquer / débloquer" (click)="toggleBlock(user)">
-                    <span class="material-icons">{{ user.status === 'active' ? 'block' : 'lock_open' }}</span>
+                  <button class="bk-icon-btn" title="Bloquer / Débloquer" (click)="toggleBlock(user)">
+                    <span class="material-icons">{{ user.status === 'active' ? 'lock' : 'lock_open' }}</span>
                   </button>
                   <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(user)">
                     <span class="material-icons">delete</span>
@@ -87,12 +149,14 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="text-center text-muted py-4">
-                @if (searchTerm() || statusFilter() !== 'all') {
-                  Aucun utilisateur ne correspond aux filtres
-                } @else {
-                  Aucun utilisateur
-                }
+              <td colspan="7">
+                <div class="bk-empty">
+                  <span class="material-icons">group_off</span>
+                  <p>Aucun utilisateur ne correspond aux critères</p>
+                  <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+                    Réinitialiser les filtres
+                  </button>
+                </div>
               </td>
             </tr>
           }
@@ -101,21 +165,77 @@
     </div>
   </div>
 
-  <!-- Pagination -->
+  <!-- ══════ PAGINATION ══════ -->
   @if (totalPages() > 1) {
-    <div class="d-flex justify-content-center mt-3 gap-2 align-items-center">
-      <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
-        <span class="material-icons" style="font-size: 1rem;">chevron_left</span> Précédent
+    <div class="bk-pagination">
+      <button class="bk-page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+        <span class="material-icons">chevron_left</span>
       </button>
-      <span class="small">Page {{ currentPage() }} / {{ totalPages() }}</span>
-      <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
-        Suivant <span class="material-icons" style="font-size: 1rem;">chevron_right</span>
+
+      @for (p of [].constructor(totalPages()); track $index) {
+        <button
+          class="bk-page-num"
+          [class.active]="currentPage() === $index + 1"
+          (click)="goToPage($index + 1)">
+          {{ $index + 1 }}
+        </button>
+      }
+
+      <button class="bk-page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+        <span class="material-icons">chevron_right</span>
       </button>
+
+      <span class="bk-page-info">
+        Page {{ currentPage() }} sur {{ totalPages() }} — {{ filteredUsers().length }} utilisateur(s)
+      </span>
     </div>
   }
 </div>
 
-<!-- Modale d'édition -->
+<!-- ══════ MODALE : VOIR DÉTAILS ══════ -->
+@if (viewingUser(); as user) {
+  <div class="bk-modal-backdrop" (click)="closeView()">
+    <div class="bk-modal bk-modal--detail" (click)="$event.stopPropagation()">
+      <div class="bk-detail-header">
+        <div class="bk-avatar-xl" [style.background]="avatarColor(user.name)">
+          {{ initial(user.name) }}
+        </div>
+        <div>
+          <h3 class="mb-1">{{ user.name }}</h3>
+          <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">{{ roleLabel(user.role) }}</span>
+        </div>
+        <button class="bk-icon-btn" (click)="closeView()"><span class="material-icons">close</span></button>
+      </div>
+
+      <div class="bk-detail-body">
+        <div class="bk-detail-row"><span>Email</span><strong>{{ user.email }}</strong></div>
+        <div class="bk-detail-row"><span>Téléphone</span><strong>{{ user.phone }}</strong></div>
+        <div class="bk-detail-row"><span>Ville</span><strong>{{ user.city }}</strong></div>
+        <div class="bk-detail-row">
+          <span>Statut</span>
+          <strong>
+            <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
+              <span class="dot"></span>
+              {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
+            </span>
+          </strong>
+        </div>
+        <div class="bk-detail-row"><span>Inscrit le</span><strong>{{ user.createdAt }}</strong></div>
+        <div class="bk-detail-row"><span>Dernière connexion</span><strong>{{ user.lastLogin }}</strong></div>
+        <div class="bk-detail-row"><span>Produits créés</span><strong>{{ user.productsCount }}</strong></div>
+      </div>
+
+      <div class="bk-modal-footer">
+        <button class="btn btn-outline-secondary" (click)="closeView()">Fermer</button>
+        <button class="btn btn-primary" (click)="closeView(); openEdit(user)">
+          <span class="material-icons">edit</span> Modifier
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════ MODALE : ÉDITER ══════ -->
 @if (editingUser(); as user) {
   <div class="bk-modal-backdrop" (click)="closeEdit()">
     <div class="bk-modal" (click)="$event.stopPropagation()">
@@ -123,20 +243,32 @@
         <h5 class="mb-0">Modifier l'utilisateur</h5>
         <button class="bk-icon-btn" (click)="closeEdit()"><span class="material-icons">close</span></button>
       </div>
-      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="bk-modal__body d-flex flex-column gap-3">
-        <div>
-          <label class="form-label bk-form-label">Nom complet</label>
-          <input class="form-control bk-input-plain" formControlName="name">
-        </div>
-        <div>
-          <label class="form-label bk-form-label">Email</label>
-          <input class="form-control bk-input-plain" formControlName="email">
-        </div>
-        <div>
-          <label class="form-label bk-form-label">Téléphone</label>
-          <input class="form-control bk-input-plain" formControlName="phone">
-        </div>
-        <div class="d-flex justify-content-end gap-2 mt-2">
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="bk-modal__body">
+        <label class="bk-field">
+          <span>Nom complet</span>
+          <input class="form-control bk-input-plain" formControlName="name" />
+        </label>
+        <label class="bk-field">
+          <span>Email</span>
+          <input class="form-control bk-input-plain" formControlName="email" />
+        </label>
+        <label class="bk-field">
+          <span>Téléphone</span>
+          <input class="form-control bk-input-plain" formControlName="phone" />
+        </label>
+        <label class="bk-field">
+          <span>Rôle</span>
+          <select class="form-control bk-input-plain" formControlName="role">
+            <option value="ADMIN">Administrateur</option>
+            <option value="MANAGER">Gestionnaire</option>
+            <option value="USER">Utilisateur</option>
+          </select>
+        </label>
+        <label class="bk-field">
+          <span>Ville</span>
+          <input class="form-control bk-input-plain" formControlName="city" />
+        </label>
+        <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
         </div>
@@ -145,37 +277,49 @@
   </div>
 }
 
-<!-- Modale d'ajout -->
+<!-- ══════ MODALE : AJOUTER ══════ -->
 @if (showAddModal()) {
   <div class="bk-modal-backdrop" (click)="closeAdd()">
     <div class="bk-modal" (click)="$event.stopPropagation()">
       <div class="bk-modal__header">
-        <h5 class="mb-0">Ajouter un utilisateur</h5>
+        <h5 class="mb-0">Nouvel utilisateur</h5>
         <button class="bk-icon-btn" (click)="closeAdd()"><span class="material-icons">close</span></button>
       </div>
-      <form [formGroup]="addForm" (ngSubmit)="saveAdd()" class="bk-modal__body d-flex flex-column gap-3">
-        <div>
-          <label class="form-label bk-form-label">Nom complet</label>
-          <input class="form-control bk-input-plain" formControlName="name">
-        </div>
-        <div>
-          <label class="form-label bk-form-label">Email</label>
-          <input class="form-control bk-input-plain" formControlName="email">
-        </div>
-        <div>
-          <label class="form-label bk-form-label">Téléphone</label>
-          <input class="form-control bk-input-plain" formControlName="phone">
-        </div>
-        <div>
-          <label class="form-label bk-form-label">Statut</label>
+      <form [formGroup]="addForm" (ngSubmit)="saveAdd()" class="bk-modal__body">
+        <label class="bk-field">
+          <span>Nom complet</span>
+          <input class="form-control bk-input-plain" formControlName="name" />
+        </label>
+        <label class="bk-field">
+          <span>Email</span>
+          <input class="form-control bk-input-plain" formControlName="email" />
+        </label>
+        <label class="bk-field">
+          <span>Téléphone</span>
+          <input class="form-control bk-input-plain" formControlName="phone" />
+        </label>
+        <label class="bk-field">
+          <span>Rôle</span>
+          <select class="form-control bk-input-plain" formControlName="role">
+            <option value="ADMIN">Administrateur</option>
+            <option value="MANAGER">Gestionnaire</option>
+            <option value="USER">Utilisateur</option>
+          </select>
+        </label>
+        <label class="bk-field">
+          <span>Ville</span>
+          <input class="form-control bk-input-plain" formControlName="city" />
+        </label>
+        <label class="bk-field">
+          <span>Statut</span>
           <select class="form-control bk-input-plain" formControlName="status">
             <option value="active">Actif</option>
             <option value="blocked">Bloqué</option>
           </select>
-        </div>
-        <div class="d-flex justify-content-end gap-2 mt-2">
+        </label>
+        <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeAdd()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Ajouter</button>
+          <button type="submit" class="btn btn-primary">Créer l'utilisateur</button>
         </div>
       </form>
     </div>

@@ -1,49 +1,146 @@
-<div class="bk-page">
-  <div class="mb-4">
-    <h1 class="bk-page__title">Tableau de bord</h1>
-    <p class="text-muted mb-0">Vue d'ensemble de l'activité</p>
+<div class="bk-dashboard">
+
+  <!-- En-tête -->
+  <div class="page-heading">
+    <h1>Tableau de bord administrateur</h1>
+    <p>Vue d'ensemble de la plateforme Bilanko — {{ today | date:'dd MMMM yyyy' }}</p>
   </div>
 
-  <div class="bk-kpi-grid mb-4">
+  <!-- KPIs -->
+  <section class="kpi-row">
     @for (kpi of kpis; track kpi.label) {
-      <div class="bk-kpi-card">
-        <div class="bk-kpi-card__icon">
+      <div class="kpi-card">
+        <div class="kpi-card__icon">
           <span class="material-icons">{{ kpi.icon }}</span>
         </div>
-        <div class="bk-kpi-card__body">
-          <p class="bk-kpi-card__label">{{ kpi.label }}</p>
-          <h3 class="bk-kpi-card__value">{{ kpi.value }}</h3>
-          <span class="bk-kpi-card__trend" [class.bk-kpi-card__trend--negative]="!kpi.trendPositive">
-            {{ kpi.trend }}
-          </span>
+        <div class="kpi-card__content">
+          <div class="kpi-label">{{ kpi.label }}</div>
+          <div class="kpi-value">{{ kpi.value }}</div>
+          <div class="kpi-trend" [class.up]="kpi.trendPositive" [class.down]="!kpi.trendPositive">
+            {{ kpi.trendPositive ? '↑' : '↓' }} {{ kpi.trend }}
+            <span class="muted">vs période précédente</span>
+          </div>
         </div>
       </div>
     }
-  </div>
+  </section>
 
-  <div class="row g-4">
-    <div class="col-lg-8">
-      <div class="bk-card">
-        <h5 class="bk-card__title">Évolution des ventes</h5>
-        <canvas #evolutionChart height="110"></canvas>
+  <!-- Grille principale -->
+  <section class="dashboard-grid">
+
+    <!-- Colonne gauche -->
+    <div class="left-column">
+
+      <!-- Graphique ligne -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Évolution de l'activité</h2>
+          <div class="period-picker">
+            <div class="date-input-group">
+              <label>Du</label>
+              <input type="date" [(ngModel)]="dateDebut" />
+            </div>
+            <span class="date-separator">au</span>
+            <div class="date-input-group">
+              <label>Au</label>
+              <input type="date" [(ngModel)]="dateFin" />
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-container chart-container--line">
+          <canvas #lineChart></canvas>
+        </div>
+
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-box ca"></span> Chiffre d'affaires</div>
+          <div class="legend-item"><span class="legend-box marge"></span> Marge</div>
+          <div class="legend-item"><span class="legend-box charges"></span> Charges</div>
+        </div>
+      </div>
+
+      <!-- Tableau ventes -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Dernières ventes</h2>
+          <a routerLink="/sales" class="link">Voir toutes les ventes →</a>
+        </div>
+
+        <table class="bk-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Client</th>
+              <th class="num">Produits</th>
+              <th class="num">Montant</th>
+              <th class="num">Marge</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (sale of recentSales; track sale.id) {
+              <tr>
+                <td>{{ sale.date }}</td>
+                <td><span class="client-link">{{ sale.client }}</span></td>
+                <td class="num">{{ sale.items }}</td>
+                <td class="num bilanko-amount">{{ sale.total | currency:'XAF':'symbol':'1.0-0' }}</td>
+                <td class="num bilanko-amount bilanko-amount--positive">{{ sale.margin | currency:'XAF':'symbol':'1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="col-lg-4">
-      <div class="bk-card">
-        <h5 class="bk-card__title">Utilisateurs récents</h5>
-        <ul class="bk-simple-list">
-          @for (user of recentUsers; track user.email) {
-            <li class="bk-simple-list__item">
-              <div class="bk-simple-list__avatar">{{ initial(user.name) }}</div>
-              <div class="flex-grow-1">
-                <p class="mb-0 small fw-medium">{{ user.name }}</p>
-                <p class="mb-0 small text-muted">{{ user.email }}</p>
+
+    <!-- Colonne droite -->
+    <div class="right-column">
+
+      <!-- Alertes stock -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Alertes de stock</h2>
+          <a routerLink="/products" class="link">Tout voir →</a>
+        </div>
+        @for (alert of stockAlerts; track alert.name) {
+          <div class="alert-row">
+            <span class="alert-dot" [class.low]="alert.level === 'low'" [class.mid]="alert.level === 'mid'"></span>
+            <div class="alert-text">
+              <div class="name">{{ alert.name }}</div>
+              <div class="sub">{{ alert.status }}</div>
+            </div>
+            <div class="alert-qty">{{ alert.qty }} restants</div>
+          </div>
+        }
+      </div>
+
+      <!-- Donut fournisseurs -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Répartition des charges</h2>
+          <a routerLink="/charges" class="link">Détails →</a>
+        </div>
+
+        <div class="chart-container chart-container--donut">
+          <canvas #donutChart></canvas>
+          <div class="donut-center-info">
+            <div class="donut-center-amount">{{ totalCharges | currency:'XAF':'symbol':'1.0-0' }}</div>
+            <div class="donut-center-badge">Fournisseurs</div>
+          </div>
+        </div>
+
+        <div class="supplier-charges-list">
+          @for (f of suppliers; track f.name) {
+            <div class="supplier-item">
+              <div class="supplier-rect" [style.background-color]="f.color"></div>
+              <div class="supplier-info">
+                <div class="supplier-name">{{ f.name }}</div>
+                <div class="supplier-desc">{{ f.desc }}</div>
               </div>
-              <span class="small text-muted">{{ user.date }}</span>
-            </li>
+              <div class="supplier-amount">{{ f.amount | currency:'XAF':'symbol':'1.0-0' }}</div>
+            </div>
           }
-        </ul>
+        </div>
       </div>
     </div>
-  </div>
+
+  </section>
 </div>
