@@ -77,16 +77,16 @@
             </tr>
           </thead>
           <tbody>
-            @for (sale of recentSales; track sale.id) {
-              <tr>
-                <td>{{ sale.date }}</td>
-                <td><span class="client-link">{{ sale.client }}</span></td>
-                <td class="num">{{ sale.items }}</td>
-                <td class="num bilanko-amount">{{ sale.total | currency:'XAF':'symbol':'1.0-0' }}</td>
-                <td class="num bilanko-amount bilanko-amount--positive">{{ sale.margin | currency:'XAF':'symbol':'1.0-0' }}</td>
-              </tr>
-            }
-          </tbody>
+  @for (sale of recentSales; track sale.id) {
+    <tr>
+      <td data-label="Date">{{ sale.date }}</td>
+      <td data-label="Client"><span class="client-link">{{ sale.client }}</span></td>
+      <td data-label="Produits" class="num">{{ sale.items }}</td>
+      <td data-label="Montant" class="num bilanko-amount">{{ sale.total | currency:'XAF':'symbol':'1.0-0' }}</td>
+      <td data-label="Marge" class="num bilanko-amount bilanko-amount--positive">{{ sale.margin | currency:'XAF':'symbol':'1.0-0' }}</td>
+    </tr>
+  }
+</tbody>
         </table>
       </div>
     </div>

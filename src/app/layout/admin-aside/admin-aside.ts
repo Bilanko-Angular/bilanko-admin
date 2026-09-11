@@ -27,9 +27,9 @@ export class AdminAsideComponent {
     this.isOpen.set(false);
     document.body.style.overflow = '';
   }
-
-  toggleMenu() {
+ toggleMenu() {
     this.isOpen.update(v => !v);
+    document.body.style.overflow = this.isOpen() ? 'hidden' : '';
   }
 
   logout() {

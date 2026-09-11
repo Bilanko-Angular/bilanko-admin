@@ -102,65 +102,65 @@
           </tr>
         </thead>
         <tbody>
-          @for (user of paginatedUsers(); track user.id) {
-            <tr>
-              <td>
-                <div class="bk-user-cell">
-                  <div class="bk-avatar-lg" [style.background]="avatarColor(user.name)">
-                    {{ initial(user.name) }}
-                  </div>
-                  <div class="bk-user-info">
-                    <div class="bk-user-name">{{ user.name }}</div>
-                    <div class="bk-user-email">{{ user.email }}</div>
-                    <div class="bk-user-phone">{{ user.phone }}</div>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">
-                  {{ roleLabel(user.role) }}
-                </span>
-              </td>
-              <td class="bk-city">{{ user.city }}</td>
-              <td class="num">{{ user.productsCount }}</td>
-              <td>
-                <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
-                  <span class="dot"></span>
-                  {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
-                </span>
-              </td>
-              <td class="bk-last-login">{{ user.lastLogin }}</td>
-              <td class="text-end">
-                <div class="bk-actions">
-                  <button class="bk-icon-btn" title="Voir les détails" (click)="viewUser(user)">
-                    <span class="material-icons">visibility</span>
-                  </button>
-                  <button class="bk-icon-btn" title="Modifier" (click)="openEdit(user)">
-                    <span class="material-icons">edit</span>
-                  </button>
-                  <button class="bk-icon-btn" title="Bloquer / Débloquer" (click)="toggleBlock(user)">
-                    <span class="material-icons">{{ user.status === 'active' ? 'lock' : 'lock_open' }}</span>
-                  </button>
-                  <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(user)">
-                    <span class="material-icons">delete</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7">
-                <div class="bk-empty">
-                  <span class="material-icons">group_off</span>
-                  <p>Aucun utilisateur ne correspond aux critères</p>
-                  <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
-                    Réinitialiser les filtres
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
+  @for (user of paginatedUsers(); track user.id) {
+    <tr>
+      <td data-label="Utilisateur">
+        <div class="bk-user-cell">
+          <div class="bk-avatar-lg" [style.background]="avatarColor(user.name)">
+            {{ initial(user.name) }}
+          </div>
+          <div class="bk-user-info">
+            <div class="bk-user-name">{{ user.name }}</div>
+            <div class="bk-user-email">{{ user.email }}</div>
+            <div class="bk-user-phone">{{ user.phone }}</div>
+          </div>
+        </div>
+      </td>
+      <td data-label="Rôle">
+        <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">
+          {{ roleLabel(user.role) }}
+        </span>
+      </td>
+      <td data-label="Ville" class="bk-city">{{ user.city }}</td>
+      <td data-label="Produits" class="num">{{ user.productsCount }}</td>
+      <td data-label="Statut">
+        <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
+          <span class="dot"></span>
+          {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
+        </span>
+      </td>
+      <td data-label="Dernière connexion" class="bk-last-login">{{ user.lastLogin }}</td>
+      <td data-label="Actions" class="text-end">
+        <div class="bk-actions">
+          <button class="bk-icon-btn" title="Voir les détails" (click)="viewUser(user)">
+            <span class="material-icons">visibility</span>
+          </button>
+          <button class="bk-icon-btn" title="Modifier" (click)="openEdit(user)">
+            <span class="material-icons">edit</span>
+          </button>
+          <button class="bk-icon-btn" title="Bloquer / Débloquer" (click)="toggleBlock(user)">
+            <span class="material-icons">{{ user.status === 'active' ? 'lock' : 'lock_open' }}</span>
+          </button>
+          <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(user)">
+            <span class="material-icons">delete</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  } @empty {
+    <tr>
+      <td colspan="7">
+        <div class="bk-empty">
+          <span class="material-icons">group_off</span>
+          <p>Aucun utilisateur ne correspond aux critères</p>
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+            Réinitialiser les filtres
+          </button>
+        </div>
+      </td>
+    </tr>
+  }
+</tbody>
       </table>
     </div>
   </div>
