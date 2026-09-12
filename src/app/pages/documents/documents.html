@@ -1,1 +1,138 @@
-<p>documents works!</p>
+<div class="doc-page">
+
+  <!-- En-tête back-office : pas de paragraphe descriptif, direct sur les chiffres -->
+  <div class="doc-header">
+    <h2>Documents générés</h2>
+
+    <div class="doc-stats">
+      <div class="doc-stat">
+        <span class="doc-stat-icon doc-stat-icon--total">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </span>
+        <span class="doc-stat-text">
+          <strong>{{ documents().length }}</strong>
+          <small>Total générés</small>
+        </span>
+      </div>
+      <div class="doc-stat">
+        <span class="doc-stat-icon doc-stat-icon--pret">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="10" width="18" height="9" rx="1"/><path d="M3 10 12 4l9 6"/>
+          </svg>
+        </span>
+        <span class="doc-stat-text">
+          <strong>{{ totalPrets() }}</strong>
+          <small>Prêts bancaires</small>
+        </span>
+      </div>
+      <div class="doc-stat">
+        <span class="doc-stat-icon doc-stat-icon--dsf">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          </svg>
+        </span>
+        <span class="doc-stat-text">
+          <strong>{{ totalDsf() }}</strong>
+          <small>Déclarations fiscales</small>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-toolbar">
+    <div class="doc-search">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+      </svg>
+      <input type="text" placeholder="Rechercher un utilisateur, une référence..." [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" />
+    </div>
+    <div class="doc-filters">
+      <button class="doc-filter" [class.actif]="filtreType() === 'tous'" (click)="filtreType.set('tous')">Tous</button>
+      <button class="doc-filter" [class.actif]="filtreType() === 'pret_bancaire'" (click)="filtreType.set('pret_bancaire')">Prêts</button>
+      <button class="doc-filter" [class.actif]="filtreType() === 'dsf_smt'" (click)="filtreType.set('dsf_smt')">Fiscal</button>
+    </div>
+  </div>
+
+  <!-- Vue tableau (desktop) -->
+  <div class="doc-table-wrap">
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Type</th>
+          <th>Référence</th>
+          <th class="doc-th-right">Montant</th>
+          <th>Généré le</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of documentsFiltres(); track d.id) {
+          <tr>
+            <td>
+              <div class="doc-user">
+                <span class="doc-user-avatar">{{ d.utilisateurNom.charAt(0) }}</span>
+                <div class="doc-user-text">
+                  <strong>{{ d.utilisateurNom }}</strong>
+                  <span>{{ d.utilisateurCommerce }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="doc-badge" [class.doc-badge--pret]="d.type === 'pret_bancaire'" [class.doc-badge--dsf]="d.type === 'dsf_smt'">
+                {{ labelsType[d.type] }}
+              </span>
+            </td>
+            <td class="doc-ref">{{ d.reference }}</td>
+            <td class="doc-montant doc-th-right">{{ formaterMontant(d.montant) }}</td>
+            <td>
+              <div class="doc-date">
+                <span>{{ formaterDate(d.genereLe) }}</span>
+                <small>{{ formaterHeure(d.genereLe) }}</small>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5">
+              <div class="doc-empty">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <p>Aucun document ne correspond à votre recherche.</p>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Vue cartes (mobile) -->
+  <div class="doc-cards">
+    @for (d of documentsFiltres(); track d.id) {
+      <div class="doc-card">
+        <div class="doc-card-top">
+          <div class="doc-user">
+            <span class="doc-user-avatar">{{ d.utilisateurNom.charAt(0) }}</span>
+            <div class="doc-user-text">
+              <strong>{{ d.utilisateurNom }}</strong>
+              <span>{{ d.utilisateurCommerce }}</span>
+            </div>
+          </div>
+          <span class="doc-badge" [class.doc-badge--pret]="d.type === 'pret_bancaire'" [class.doc-badge--dsf]="d.type === 'dsf_smt'">
+            {{ labelsType[d.type] }}
+          </span>
+        </div>
+        <div class="doc-card-row"><span>Référence</span><strong>{{ d.reference }}</strong></div>
+        <div class="doc-card-row"><span>Montant</span><strong>{{ formaterMontant(d.montant) }}</strong></div>
+        <div class="doc-card-row"><span>Généré le</span><strong>{{ formaterDate(d.genereLe) }} · {{ formaterHeure(d.genereLe) }}</strong></div>
+      </div>
+    } @empty {
+      <div class="doc-empty">
+        <p>Aucun document ne correspond à votre recherche.</p>
+      </div>
+    }
+  </div>
+</div>
