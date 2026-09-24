@@ -2,6 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import {AuthStoreService} from '../../service/store/auth/auth-store.service';
+import {User} from '../../models/person';
 
 @Component({
   selector: 'app-login',
@@ -12,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
-  private auth = inject(AuthService);
+  private auth = inject(AuthStoreService);
   private router = inject(Router);
 
   loginForm = this.fb.group({
@@ -23,28 +25,32 @@ export class LoginComponent {
   error: string | null = null;
   isLoading = false;
   showPassword = signal(false);
+  private loginError = '';
 
   togglePassword() {
     this.showPassword.update(v => !v);
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
     this.isLoading = true;
     this.error = null;
-    const { email, password } = this.loginForm.value;
-    this.auth.login(email!, password!).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.router.navigate(['/dashboard']);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.error = err.error?.message || 'Identifiants incorrects';
-      },
-    });
+    const formValue = this.loginForm.value;
+    const user: User = {
+      email: formValue.email ?? '',
+      password: formValue.password ?? '',
+    };
+
+    try {
+      await this.auth.login(user);
+      await this.router.navigate(['/dashboard']);
+    } catch (error: any) {
+      this.loginError = error?.message || 'Identifiants incorrects ou erreur serveur.';
+    } finally {
+      this.isLoading = false;
+    }
   }
 }

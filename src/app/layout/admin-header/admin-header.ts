@@ -2,7 +2,7 @@ import { Component, inject, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
-import { ThemeService } from '../../services/theme.service';
+import { ThemeService } from '../../service/app/theme/theme.service';
 import { SearchService } from '../../services/search.service';
 import { NotificationsBell } from '../../components/notifications-bell/notifications-bell';
 
@@ -22,7 +22,7 @@ export class AdminHeaderComponent {
  readonly toggleMenu = output<void>();
   profileOpen = signal(false);
 
- 
+
 
   // Exposer le terme de recherche via un getter public
   get searchTerm() {

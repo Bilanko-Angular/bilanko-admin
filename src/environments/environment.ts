@@ -1,4 +1,4 @@
 export const environment = {
-  production: false,
-  baseApiUrl: 'https://bilanko-backend-production.up.railway.app/api' // Mets l'URL de ton backend
+  production: true,
+  baseApiUrl: 'https://bilanko-backend-production-e991.up.railway.app/api',
 };
