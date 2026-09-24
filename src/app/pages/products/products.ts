@@ -1,88 +1,56 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-
-export interface Product {
-  id: number;
-  name: string;
-  category: string;
-  quantity: number;
-  alertThreshold: number;
-  purchasePrice: number;
-  sellingPrice: number;
-  user: string;
-}
+import { Component, inject, signal, computed } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ProductAdminService } from '../../services/product-admin.service';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [FormsModule],
   templateUrl: './products.html',
-  styleUrls: ['./products.css'],
+  styleUrl: './products.css',
 })
 export class Products {
-  private fb = inject(FormBuilder);
+  private readonly productAdminService = inject(ProductAdminService);
 
-  products = signal<Product[]>([
-    { id: 1, name: 'MacBook Pro', category: 'Informatique', quantity: 45, alertThreshold: 10, purchasePrice: 2200000, sellingPrice: 3000000, user: 'Jean Mballa' },
-    { id: 2, name: 'Onduleur APC', category: 'Énergie', quantity: 4, alertThreshold: 5, purchasePrice: 450000, sellingPrice: 600000, user: 'Awa Ngono' },
-  ]);
+  readonly produits = this.productAdminService.produits;
+  readonly recherche = signal('');
+  readonly filtreCategorie = signal('toutes');
+  readonly filtreStatut = signal<'tous' | 'ok' | 'warning' | 'error'>('tous');
 
-  showModal = signal(false);
-  editingProduct = signal<Product | null>(null);
+  readonly categories = computed(() =>
+    Array.from(new Set(this.produits().map((p) => p.categorie))).sort()
+  );
 
-  productForm = this.fb.group({
-    name: ['', Validators.required],
-    category: ['', Validators.required],
-    quantity: [0, Validators.min(0)],
-    alertThreshold: [0, Validators.min(0)],
-    purchasePrice: [0, Validators.min(0)],
-    sellingPrice: [0, Validators.min(0)],
-    user: ['', Validators.required],
+  readonly produitsFiltres = computed(() => {
+    const terme = this.recherche().trim().toLowerCase();
+    const categorie = this.filtreCategorie();
+    const statut = this.filtreStatut();
+    return this.produits().filter((p) => {
+      const matchTerme =
+        !terme ||
+        p.nom.toLowerCase().includes(terme) ||
+        p.reference.toLowerCase().includes(terme) ||
+        p.proprietaireCommerce.toLowerCase().includes(terme);
+      const matchCategorie = categorie === 'toutes' || p.categorie === categorie;
+      const matchStatut = statut === 'tous' || this.productAdminService.statutStock(p) === statut;
+      return matchTerme && matchCategorie && matchStatut;
+    });
   });
 
-  openAdd() {
-    this.editingProduct.set(null);
-    this.productForm.reset();
-    this.showModal.set(true);
+  readonly valeurTotaleStock = computed(() =>
+    this.produits().reduce((s, p) => s + p.quantiteStock * p.prixAchat, 0)
+  );
+  readonly totalRuptures = computed(() =>
+    this.produits().filter((p) => this.productAdminService.statutStock(p) === 'error').length
+  );
+
+  statutStock(p: any) { return this.productAdminService.statutStock(p); }
+
+  formaterMontant(montant: number): string {
+    return montant.toLocaleString('fr-FR') + ' FCFA';
   }
 
-  openEdit(product: Product) {
-    this.editingProduct.set(product);
-    this.productForm.patchValue(product);
-    this.showModal.set(true);
-  }
-
-  closeModal() {
-    this.showModal.set(false);
-  }
-
-  saveProduct() {
-    if (this.productForm.invalid) {
-      this.productForm.markAllAsTouched();
-      return;
-    }
-    const form = this.productForm.value as any;
-    if (this.editingProduct()) {
-      // Modifier
-      this.products.update(list =>
-        list.map(p => p.id === this.editingProduct()!.id ? { ...p, ...form } : p)
-      );
-    } else {
-      // Ajouter
-      const newId = Math.max(...this.products().map(p => p.id)) + 1;
-      this.products.update(list => [...list, { id: newId, ...form }]);
-    }
-    this.closeModal();
-  }
-
-  deleteProduct(id: number) {
-    if (confirm('Supprimer ce produit ?')) {
-      this.products.update(list => list.filter(p => p.id !== id));
-    }
-  }
-
-  get margin() {
-    return (p: Product) => p.sellingPrice - p.purchasePrice;
+  initiale(texte: string): string {
+    return texte.charAt(0).toUpperCase();
   }
 }

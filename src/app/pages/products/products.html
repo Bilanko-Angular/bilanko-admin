@@ -1,73 +1,104 @@
-<div class="bk-page">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h1 class="bk-page__title">Produits</h1>
-      <p class="text-muted mb-0">{{ products().length }} produit(s)</p>
+<div class="prd-page">
+  <div class="prd-header">
+    <h2>Produits</h2>
+
+    <div class="prd-stats">
+      <div class="prd-stat">
+        <span class="prd-stat-icon prd-stat-icon--total">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2.5 12.5V2.5h10L20.59 10.6a2 2 0 0 1 0 2.82Z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+          </svg>
+        </span>
+        <span class="prd-stat-text"><strong>{{ produits().length }}</strong><small>Produits référencés</small></span>
+      </div>
+      <div class="prd-stat">
+        <span class="prd-stat-icon prd-stat-icon--valeur">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </span>
+        <span class="prd-stat-text"><strong>{{ formaterMontant(valeurTotaleStock()) }}</strong><small>Valeur totale du stock</small></span>
+      </div>
+      <div class="prd-stat">
+        <span class="prd-stat-icon prd-stat-icon--rupture">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </span>
+        <span class="prd-stat-text"><strong>{{ totalRuptures() }}</strong><small>Ruptures de stock</small></span>
+      </div>
     </div>
-    <button class="btn btn-primary" (click)="openAdd()">
-      <span class="material-icons">add</span> Ajouter
-    </button>
   </div>
 
-  <div class="bk-card p-0">
-    <table class="bk-table">
+  <div class="prd-toolbar">
+    <div class="prd-search">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+      </svg>
+      <input type="text" placeholder="Rechercher un produit, une référence, un commerçant..." [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" />
+    </div>
+    <select class="prd-select" [ngModel]="filtreCategorie()" (ngModelChange)="filtreCategorie.set($event)">
+      <option value="toutes">Toutes les catégories</option>
+      @for (cat of categories(); track cat) { <option [value]="cat">{{ cat }}</option> }
+    </select>
+    <div class="prd-filters">
+      <button class="prd-filter" [class.actif]="filtreStatut() === 'tous'" (click)="filtreStatut.set('tous')">Tous</button>
+      <button class="prd-filter prd-filter--warning" [class.actif]="filtreStatut() === 'warning'" (click)="filtreStatut.set('warning')">Stock bas</button>
+      <button class="prd-filter prd-filter--error" [class.actif]="filtreStatut() === 'error'" (click)="filtreStatut.set('error')">Rupture</button>
+    </div>
+  </div>
+
+  <div class="prd-table-wrap">
+    <table class="prd-table">
       <thead>
         <tr>
-          <th>Nom</th>
+          <th>Produit</th>
           <th>Catégorie</th>
-          <th>Qté</th>
-          <th>Seuil</th>
-          <th>Prix achat</th>
-          <th>Prix vente</th>
-          <th>Marge</th>
-          <th>Utilisateur</th>
-          <th class="text-end">Actions</th>
+          <th>Propriétaire</th>
+          <th class="prd-th-center">Stock</th>
+          <th class="prd-th-right">Prix d'achat</th>
         </tr>
       </thead>
       <tbody>
-        @for (p of products(); track p.id) {
+        @for (p of produitsFiltres(); track p.id) {
           <tr>
-            <td>{{ p.name }}</td>
-            <td>{{ p.category }}</td>
-            <td>{{ p.quantity }}</td>
-            <td>{{ p.alertThreshold }}</td>
-            <td>{{ p.purchasePrice | number }}</td>
-            <td>{{ p.sellingPrice | number }}</td>
-            <td>{{ margin(p) | number }}</td>
-            <td>{{ p.user }}</td>
-            <td class="text-end">
-              <button class="bk-icon-btn" (click)="openEdit(p)"><span class="material-icons">edit</span></button>
-              <button class="bk-icon-btn bk-icon-btn--danger" (click)="deleteProduct(p.id)"><span class="material-icons">delete</span></button>
+            <td>
+              <div class="prd-name"><strong>{{ p.nom }}</strong><span>Réf. {{ p.reference }}</span></div>
             </td>
+            <td><span class="prd-cat-badge">{{ p.categorie }}</span></td>
+            <td>
+              <div class="prd-owner">
+                <span class="prd-owner-avatar">{{ initiale(p.proprietaireNom) }}</span>
+                <div><strong>{{ p.proprietaireCommerce }}</strong><span>{{ p.proprietaireNom }}</span></div>
+              </div>
+            </td>
+            <td class="prd-th-center">
+              <span class="prd-stock" [class.prd-stock--warning]="statutStock(p) === 'warning'" [class.prd-stock--error]="statutStock(p) === 'error'">
+                {{ p.quantiteStock }}
+              </span>
+            </td>
+            <td class="prd-th-right prd-prix">{{ formaterMontant(p.prixAchat) }}</td>
           </tr>
         } @empty {
-          <tr><td colspan="9" class="text-center text-muted py-4">Aucun produit</td></tr>
+          <tr><td colspan="5"><div class="prd-empty"><p>Aucun produit ne correspond à votre recherche.</p></div></td></tr>
         }
       </tbody>
     </table>
   </div>
-</div>
 
-@if (showModal()) {
-  <div class="bk-modal-backdrop" (click)="closeModal()">
-    <div class="bk-modal" (click)="$event.stopPropagation()">
-      <div class="bk-modal__header">
-        <h5>{{ editingProduct() ? 'Modifier' : 'Ajouter' }} un produit</h5>
-        <button class="bk-icon-btn" (click)="closeModal()"><span class="material-icons">close</span></button>
-      </div>
-      <form [formGroup]="productForm" (ngSubmit)="saveProduct()" class="bk-modal__body d-flex flex-column gap-3">
-        <input class="form-control bk-input-plain" placeholder="Nom" formControlName="name">
-        <input class="form-control bk-input-plain" placeholder="Catégorie" formControlName="category">
-        <input class="form-control bk-input-plain" type="number" placeholder="Quantité" formControlName="quantity">
-        <input class="form-control bk-input-plain" type="number" placeholder="Seuil d'alerte" formControlName="alertThreshold">
-        <input class="form-control bk-input-plain" type="number" placeholder="Prix d'achat" formControlName="purchasePrice">
-        <input class="form-control bk-input-plain" type="number" placeholder="Prix de vente" formControlName="sellingPrice">
-        <input class="form-control bk-input-plain" placeholder="Utilisateur" formControlName="user">
-        <div class="d-flex justify-content-end gap-2 mt-2">
-          <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
+  <div class="prd-cards">
+    @for (p of produitsFiltres(); track p.id) {
+      <div class="prd-card">
+        <div class="prd-card-top">
+          <div class="prd-name"><strong>{{ p.nom }}</strong><span>Réf. {{ p.reference }}</span></div>
+          <span class="prd-stock" [class.prd-stock--warning]="statutStock(p) === 'warning'" [class.prd-stock--error]="statutStock(p) === 'error'">{{ p.quantiteStock }}</span>
         </div>
-      </form>
-    </div>
+        <span class="prd-cat-badge">{{ p.categorie }}</span>
+        <div class="prd-card-row"><span>Propriétaire</span><strong>{{ p.proprietaireCommerce }}</strong></div>
+        <div class="prd-card-row"><span>Prix d'achat</span><strong>{{ formaterMontant(p.prixAchat) }}</strong></div>
+      </div>
+    } @empty {
+      <div class="prd-empty"><p>Aucun produit ne correspond à votre recherche.</p></div>
+    }
   </div>
-}
+</div>

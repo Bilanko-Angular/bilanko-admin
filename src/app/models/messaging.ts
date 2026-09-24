@@ -7,8 +7,8 @@ export interface Utilisateur {
   telephone?: string;
   commerce: string;
   niu?: string;
-  dateInscription: string; // 'YYYY-MM-DD'
-  avatarCouleur: string; // couleur de fond de l'avatar (initiales)
+  dateInscription: string;
+  avatarCouleur: string;
 }
 
 export interface Message {
@@ -16,8 +16,9 @@ export interface Message {
   conversationId: string;
   auteur: 'admin' | 'utilisateur';
   contenu: string;
-  envoyeLe: string; // ISO
+  envoyeLe: string;
   lu: boolean;
+  modifie?: boolean;
 }
 
 export interface Conversation {
@@ -26,6 +27,7 @@ export interface Conversation {
   statut: StatutConversation;
   sujet: string;
   dernierMessage: string;
-  dernierMessageLe: string; // ISO
+  dernierMessageLe: string;
   nonLus: number;
+  bloque: boolean;
 }

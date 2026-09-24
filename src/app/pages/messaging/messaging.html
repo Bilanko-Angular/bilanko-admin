@@ -1,8 +1,5 @@
 <div class="msg-app">
 
-  <!-- ============================================================
-       COLONNE 1 — Liste des conversations
-       ============================================================ -->
   <div class="msg-list-pane" [class.msg-list-pane--hidden-mobile]="vueMobile() === 'discussion'">
     <div class="msg-list-header">
       <div>
@@ -30,25 +27,20 @@
 
     <div class="msg-conv-list">
       @for (conv of conversationsFiltrees(); track conv.id) {
-        <button
-          type="button"
-          class="msg-conv-item"
-          [class.actif]="conv.id === conversationActiveId()"
-          [class.non-lu]="conv.nonLus > 0"
-          (click)="ouvrirConversation(conv.id)"
-        >
+        <button type="button" class="msg-conv-item" [class.actif]="conv.id === conversationActiveId()" [class.non-lu]="conv.nonLus > 0" (click)="ouvrirConversation(conv.id)">
           <span class="msg-avatar" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
           <span class="msg-conv-body">
             <span class="msg-conv-top">
               <strong>{{ conv.utilisateur.nom }}</strong>
               <span class="msg-conv-time">{{ heureRelative(conv.dernierMessageLe) }}</span>
             </span>
-            <span class="msg-conv-subject">{{ conv.sujet }}</span>
+            <span class="msg-conv-subject">
+              {{ conv.sujet }}
+              @if (conv.bloque) { <span class="msg-tag-bloque">Bloqué</span> }
+            </span>
             <span class="msg-conv-preview">{{ conv.dernierMessage }}</span>
           </span>
-          @if (conv.nonLus > 0) {
-            <span class="msg-badge">{{ conv.nonLus }}</span>
-          }
+          @if (conv.nonLus > 0) { <span class="msg-badge">{{ conv.nonLus }}</span> }
         </button>
       } @empty {
         <div class="msg-empty">
@@ -61,16 +53,11 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       COLONNE 2 — Fil de discussion
-       ============================================================ -->
   <div class="msg-thread-pane" [class.msg-thread-pane--hidden-mobile]="vueMobile() === 'liste'">
     @if (conversationActive(); as conv) {
       <div class="msg-thread-header">
         <button class="msg-back" type="button" (click)="retourALaListe()" aria-label="Retour">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <span class="msg-avatar msg-avatar--sm" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
         <div class="msg-thread-identity">
@@ -85,7 +72,29 @@
             @case ('resolue') { Résolue }
           }
         </span>
-        <button class="msg-toggle-contact" type="button" (click)="toggleContact()" aria-label="Infos utilisateur">
+
+        <div class="msg-menu-wrap">
+          <button class="msg-icon-btn" type="button" (click)="toggleMenuConversation($event)" aria-label="Options de la conversation">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>
+            </svg>
+          </button>
+          @if (menuConversationOuvert()) {
+            <div class="msg-menu" (click)="$event.stopPropagation()">
+              @if (conv.statut !== 'resolue') {
+                <button type="button" (click)="marquerCommeResolue($event, conv.id)">Marquer comme résolue</button>
+              } @else {
+                <button type="button" (click)="marquerCommeOuverte($event, conv.id)">Rouvrir la conversation</button>
+              }
+              <button type="button" (click)="basculerBlocage($event, conv.id)">
+                {{ conv.bloque ? 'Débloquer l\'utilisateur' : 'Bloquer l\'utilisateur' }}
+              </button>
+              <button type="button" class="msg-menu-danger" (click)="supprimerConversation($event, conv.id)">Supprimer la conversation</button>
+            </div>
+          }
+        </div>
+
+        <button class="msg-icon-btn" type="button" (click)="toggleContact()" aria-label="Infos utilisateur">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.6 3.1-6.3 7-6.3s7 2.7 7 6.3"/>
           </svg>
@@ -99,22 +108,54 @@
             @if (m.auteur === 'utilisateur') {
               <span class="msg-avatar msg-avatar--xs" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
             }
-            <div class="msg-bubble" [class.msg-bubble--admin]="m.auteur === 'admin'">
-              <p>{{ m.contenu }}</p>
-              <span class="msg-bubble-time">{{ heure(m.envoyeLe) }}</span>
+
+            <div class="msg-bubble-wrap">
+              @if (messageEnEditionId() === m.id) {
+                <div class="msg-bubble msg-bubble--edition" [class.msg-bubble--admin]="m.auteur === 'admin'">
+                  <textarea
+                    rows="2"
+                    [ngModel]="brouillonEdition()"
+                    (ngModelChange)="brouillonEdition.set($event)"
+                    (keydown)="gererToucheEdition($event, m.id)"
+                  ></textarea>
+                  <div class="msg-edition-actions">
+                    <button type="button" (click)="annulerEdition()">Annuler</button>
+                    <button type="button" class="msg-edition-valider" (click)="validerEdition(m.id)">Enregistrer</button>
+                  </div>
+                </div>
+              } @else {
+                <div class="msg-bubble" [class.msg-bubble--admin]="m.auteur === 'admin'">
+                  <p>{{ m.contenu }}</p>
+                  <span class="msg-bubble-time">
+                    @if (m.modifie) { <em>modifié</em> · }
+                    {{ heure(m.envoyeLe) }}
+                  </span>
+                </div>
+              }
+
+              <div class="msg-menu-wrap msg-menu-wrap--message">
+                <button class="msg-bubble-menu-btn" type="button" (click)="toggleMenuMessage($event, m.id)" aria-label="Options du message">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>
+                  </svg>
+                </button>
+                @if (menuMessageOuvertId() === m.id) {
+                  <div class="msg-menu msg-menu--message" [class.msg-menu--gauche]="m.auteur === 'admin'" (click)="$event.stopPropagation()">
+                    <button type="button" (click)="copierMessage($event, m.contenu)">Copier</button>
+                    @if (m.auteur === 'admin') {
+                      <button type="button" (click)="commencerEdition($event, m.id, m.contenu)">Modifier</button>
+                      <button type="button" class="msg-menu-danger" (click)="supprimerMessage($event, m.id)">Supprimer</button>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           </div>
         }
       </div>
 
       <div class="msg-composer">
-        <textarea
-          rows="1"
-          placeholder="Écrire une réponse..."
-          [ngModel]="brouillon()"
-          (ngModelChange)="brouillon.set($event)"
-          (keydown)="gererTouche($event)"
-        ></textarea>
+        <textarea rows="1" placeholder="Écrire une réponse..." [ngModel]="brouillon()" (ngModelChange)="brouillon.set($event)" (keydown)="gererTouche($event)"></textarea>
         <button class="msg-send" type="button" [disabled]="!brouillon().trim()" (click)="envoyer()" aria-label="Envoyer">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -134,47 +175,24 @@
     }
   </div>
 
-  <!-- ============================================================
-       COLONNE 3 — Informations sur l'utilisateur
-       ============================================================ -->
   @if (conversationActive(); as conv) {
     <div class="msg-contact-pane" [class.msg-contact-pane--ouvert]="panneauContactOuvert()">
       <div class="msg-contact-header">
         <span>Informations du compte</span>
         <button type="button" class="msg-contact-close" (click)="toggleContact()" aria-label="Fermer">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-
       <div class="msg-contact-profile">
         <span class="msg-avatar msg-avatar--lg" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
         <strong>{{ conv.utilisateur.nom }}</strong>
         <span class="msg-contact-commerce">{{ conv.utilisateur.commerce }}</span>
       </div>
-
       <div class="msg-contact-fields">
-        <div class="msg-contact-field">
-          <span>Email</span>
-          <strong>{{ conv.utilisateur.email }}</strong>
-        </div>
-        @if (conv.utilisateur.telephone) {
-          <div class="msg-contact-field">
-            <span>Téléphone</span>
-            <strong>{{ conv.utilisateur.telephone }}</strong>
-          </div>
-        }
-        @if (conv.utilisateur.niu) {
-          <div class="msg-contact-field">
-            <span>NIU</span>
-            <strong>{{ conv.utilisateur.niu }}</strong>
-          </div>
-        }
-        <div class="msg-contact-field">
-          <span>Client depuis</span>
-          <strong>{{ conv.utilisateur.dateInscription }}</strong>
-        </div>
+        <div class="msg-contact-field"><span>Email</span><strong>{{ conv.utilisateur.email }}</strong></div>
+        @if (conv.utilisateur.telephone) { <div class="msg-contact-field"><span>Téléphone</span><strong>{{ conv.utilisateur.telephone }}</strong></div> }
+        @if (conv.utilisateur.niu) { <div class="msg-contact-field"><span>NIU</span><strong>{{ conv.utilisateur.niu }}</strong></div> }
+        <div class="msg-contact-field"><span>Client depuis</span><strong>{{ conv.utilisateur.dateInscription }}</strong></div>
       </div>
     </div>
   }

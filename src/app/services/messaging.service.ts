@@ -1,6 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Conversation, Message, Utilisateur } from '../models/messaging';
-
+import { Conversation, Message, Utilisateur, StatutConversation } from '../models/messaging';
 const UTILISATEURS: Utilisateur[] = [
   { id: 'u1', nom: 'Mesmine Kamtchoua', email: 'mesmine.k@gmail.com', telephone: '+237 677 12 34 56', commerce: 'Ets Mballa & Fils', niu: 'P012345678901Z', dateInscription: '2026-03-14', avatarCouleur: '#63B78D' },
   { id: 'u2', nom: 'Jean Fotso', email: 'jfotso@yahoo.fr', telephone: '+237 699 88 22 11', commerce: 'Boutique La Grâce', niu: 'P098765432100X', dateInscription: '2026-01-22', avatarCouleur: '#C98A3D' },
@@ -20,6 +19,7 @@ export class MessagingService {
       dernierMessage: "Le document ne se télécharge pas depuis hier soir, pouvez-vous vérifier ?",
       dernierMessageLe: '2026-09-12T09:14:00',
       nonLus: 2,
+      bloque: false
     },
     {
       id: 'c2',
@@ -29,6 +29,7 @@ export class MessagingService {
       dernierMessage: 'Merci pour votre retour, je vérifie avec mon comptable.',
       dernierMessageLe: '2026-09-11T16:40:00',
       nonLus: 0,
+      bloque: false
     },
     {
       id: 'c3',
@@ -38,6 +39,7 @@ export class MessagingService {
       dernierMessage: 'Serait-il possible d\'ajouter les charges récurrentes ?',
       dernierMessageLe: '2026-09-11T11:02:00',
       nonLus: 1,
+      bloque: false
     },
     {
       id: 'c4',
@@ -47,6 +49,7 @@ export class MessagingService {
       dernierMessage: 'Parfait, tout fonctionne maintenant, merci beaucoup !',
       dernierMessageLe: '2026-09-09T08:20:00',
       nonLus: 0,
+      bloque: false
     },
     {
       id: 'c5',
@@ -56,6 +59,7 @@ export class MessagingService {
       dernierMessage: "Je n'arrive plus à me connecter depuis ce matin.",
       dernierMessageLe: '2026-09-12T07:55:00',
       nonLus: 3,
+      bloque: false
     },
   ]);
 
@@ -106,5 +110,41 @@ export class MessagingService {
     this._conversations.update((liste) =>
       liste.map((c) => (c.id === conversationId ? { ...c, nonLus: 0 } : c))
     );
+  }
+    modifierMessage(messageId: string, nouveauContenu: string) {
+    this._messages.update((liste) =>
+      liste.map((m) => (m.id === messageId ? { ...m, contenu: nouveauContenu, modifie: true } : m))
+    );
+    const msg = this._messages().find((m) => m.id === messageId);
+    if (msg) {
+      this._conversations.update((liste) =>
+        liste.map((c) =>
+          c.id === msg.conversationId && c.dernierMessageLe === msg.envoyeLe
+            ? { ...c, dernierMessage: nouveauContenu }
+            : c
+        )
+      );
+    }
+  }
+
+  supprimerMessage(messageId: string) {
+    this._messages.update((liste) => liste.filter((m) => m.id !== messageId));
+  }
+
+  changerStatut(conversationId: string, statut: StatutConversation) {
+    this._conversations.update((liste) =>
+      liste.map((c) => (c.id === conversationId ? { ...c, statut } : c))
+    );
+  }
+
+  basculerBlocage(conversationId: string) {
+    this._conversations.update((liste) =>
+      liste.map((c) => (c.id === conversationId ? { ...c, bloque: !c.bloque } : c))
+    );
+  }
+
+  supprimerConversation(conversationId: string) {
+    this._conversations.update((liste) => liste.filter((c) => c.id !== conversationId));
+    this._messages.update((liste) => liste.filter((m) => m.conversationId !== conversationId));
   }
 }

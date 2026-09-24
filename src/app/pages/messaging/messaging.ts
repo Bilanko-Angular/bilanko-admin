@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, ElementRef, viewChild, effect } from '@angular/core';
+import { Component, inject, signal, computed, ElementRef, viewChild, effect, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessagingService } from '../../services/messaging.service';
 import { StatutConversation } from '../../models/messaging';
@@ -21,6 +21,12 @@ export class Messaging {
   readonly vueMobile = signal<'liste' | 'discussion'>('liste');
   readonly panneauContactOuvert = signal(false);
   readonly brouillon = signal('');
+
+  // --- Menus contextuels style WhatsApp ---
+  readonly menuMessageOuvertId = signal<string | null>(null);
+  readonly menuConversationOuvert = signal(false);
+  readonly messageEnEditionId = signal<string | null>(null);
+  readonly brouillonEdition = signal('');
 
   readonly conversationsFiltrees = computed(() => {
     const terme = this.recherche().trim().toLowerCase();
@@ -58,18 +64,89 @@ export class Messaging {
     });
   }
 
+  @HostListener('document:click')
+  fermerTousLesMenus() {
+    this.menuMessageOuvertId.set(null);
+    this.menuConversationOuvert.set(false);
+  }
+
   ouvrirConversation(id: string) {
     this.conversationActiveId.set(id);
     this.vueMobile.set('discussion');
     this.messagingService.marquerCommeLu(id);
+    this.messageEnEditionId.set(null);
   }
 
-  retourALaListe() {
+  retourALaListe() { this.vueMobile.set('liste'); }
+  toggleContact() { this.panneauContactOuvert.update((v) => !v); }
+
+  // --- Menu par message ---
+  toggleMenuMessage(evenement: Event, messageId: string) {
+    evenement.stopPropagation();
+    this.menuMessageOuvertId.update((id) => (id === messageId ? null : messageId));
+  }
+
+  commencerEdition(evenement: Event, messageId: string, contenuActuel: string) {
+    evenement.stopPropagation();
+    this.messageEnEditionId.set(messageId);
+    this.brouillonEdition.set(contenuActuel);
+    this.menuMessageOuvertId.set(null);
+  }
+
+  annulerEdition() {
+    this.messageEnEditionId.set(null);
+    this.brouillonEdition.set('');
+  }
+
+  validerEdition(messageId: string) {
+    const texte = this.brouillonEdition().trim();
+    if (texte) this.messagingService.modifierMessage(messageId, texte);
+    this.annulerEdition();
+  }
+
+  supprimerMessage(evenement: Event, messageId: string) {
+    evenement.stopPropagation();
+    this.messagingService.supprimerMessage(messageId);
+    this.menuMessageOuvertId.set(null);
+  }
+
+  copierMessage(evenement: Event, contenu: string) {
+    evenement.stopPropagation();
+    navigator.clipboard?.writeText(contenu);
+    this.menuMessageOuvertId.set(null);
+  }
+
+  // --- Menu par conversation ---
+  toggleMenuConversation(evenement: Event) {
+    evenement.stopPropagation();
+    this.menuConversationOuvert.update((v) => !v);
+  }
+
+  marquerCommeResolue(evenement: Event, conversationId: string) {
+    evenement.stopPropagation();
+    this.messagingService.changerStatut(conversationId, 'resolue');
+    this.menuConversationOuvert.set(false);
+  }
+
+  marquerCommeOuverte(evenement: Event, conversationId: string) {
+    evenement.stopPropagation();
+    this.messagingService.changerStatut(conversationId, 'ouverte');
+    this.menuConversationOuvert.set(false);
+  }
+
+  basculerBlocage(evenement: Event, conversationId: string) {
+    evenement.stopPropagation();
+    this.messagingService.basculerBlocage(conversationId);
+    this.menuConversationOuvert.set(false);
+  }
+
+  supprimerConversation(evenement: Event, conversationId: string) {
+    evenement.stopPropagation();
+    if (!confirm('Supprimer définitivement cette conversation ?')) return;
+    this.messagingService.supprimerConversation(conversationId);
+    this.conversationActiveId.set(null);
     this.vueMobile.set('liste');
-  }
-
-  toggleContact() {
-    this.panneauContactOuvert.update((v) => !v);
+    this.menuConversationOuvert.set(false);
   }
 
   envoyer() {
@@ -87,13 +164,16 @@ export class Messaging {
     }
   }
 
+  gererToucheEdition(evenement: KeyboardEvent, messageId: string) {
+    if (evenement.key === 'Enter' && !evenement.shiftKey) {
+      evenement.preventDefault();
+      this.validerEdition(messageId);
+    }
+    if (evenement.key === 'Escape') this.annulerEdition();
+  }
+
   initiales(nom: string): string {
-    return nom
-      .split(' ')
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
+    return nom.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   }
 
   heureRelative(iso: string): string {
@@ -103,8 +183,7 @@ export class Messaging {
     if (min < 60) return `${min} min`;
     const h = Math.floor(min / 60);
     if (h < 24) return `${h} h`;
-    const j = Math.floor(h / 24);
-    return `${j} j`;
+    return `${Math.floor(h / 24)} j`;
   }
 
   heure(iso: string): string {
