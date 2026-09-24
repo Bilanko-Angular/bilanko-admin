@@ -1,1 +1,297 @@
-<p>sales works!</p>
+<div class="bk-sales">
+
+  <!-- En-tête avec Nouvelle vente -->
+  <div class="bk-page-head">
+    <div>
+      <h1 class="bk-page-title">Gestion des ventes</h1>
+      <p class="bk-page-sub">Consultez toutes les transactions de la plateforme Bilanko.</p>
+    </div>
+    <button class="btn btn-primary bk-btn-add" (click)="openAdd()">
+      <span class="material-icons">add</span> Nouvelle vente
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="bk-stats">
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">payments</span></div>
+      <div>
+        <div class="bk-stat__label">Chiffre d'affaires</div>
+        <div class="bk-stat__value">{{ stats().revenue | number:'1.0-0' }} FCFA</div>
+      </div>
+    </div>
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">trending_up</span></div>
+      <div>
+        <div class="bk-stat__label">Marge totale</div>
+        <div class="bk-stat__value">{{ stats().margin | number:'1.0-0' }} FCFA</div>
+      </div>
+    </div>
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">calendar_month</span></div>
+      <div>
+        <div class="bk-stat__label">CA ce mois</div>
+        <div class="bk-stat__value">{{ stats().monthRevenue | number:'1.0-0' }} FCFA</div>
+      </div>
+    </div>
+    <div class="bk-stat">
+      <div class="bk-stat__icon bk-stat__icon--purple"><span class="material-icons">receipt_long</span></div>
+      <div>
+        <div class="bk-stat__label">Nombre de ventes</div>
+        <div class="bk-stat__value">{{ stats().count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar avec Exporter -->
+  <div class="bk-toolbar">
+    <div class="bk-toolbar__search">
+      <span class="material-icons">search</span>
+      <input
+        type="text"
+        placeholder="Rechercher par client, utilisateur..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+      />
+      @if (searchTerm()) {
+        <button type="button" (click)="clearSearch()"><span class="material-icons">close</span></button>
+      }
+    </div>
+
+    <select class="bk-toolbar__select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage.set(1)">
+      <option value="all">Tous les statuts</option>
+      <option value="paid">Payées</option>
+      <option value="pending">En attente</option>
+    </select>
+
+    <select class="bk-toolbar__select" [(ngModel)]="periodFilter" (ngModelChange)="currentPage.set(1)">
+      <option value="all">Toutes les périodes</option>
+      <option value="today">Aujourd'hui</option>
+      <option value="week">Cette semaine</option>
+      <option value="month">Ce mois</option>
+    </select>
+
+    @if (searchTerm() || statusFilter() !== 'all' || periodFilter() !== 'all') {
+      <button class="bk-btn-reset" (click)="clearFilters()">
+        <span class="material-icons">filter_alt_off</span> Réinitialiser
+      </button>
+    }
+
+    <button class="bk-btn-export" (click)="exportCSV()">
+      <span class="material-icons">download</span> Exporter
+    </button>
+  </div>
+
+  <!-- Info filtrée -->
+  <div class="bk-filtered-info">
+    <span>{{ filteredSales().length }} vente(s) — Total filtré :</span>
+    <strong>{{ filteredTotal() | number:'1.0-0' }} FCFA</strong>
+  </div>
+
+  <!-- Tableau -->
+  <div class="bk-table-card">
+    <div class="table-responsive">
+      <table class="bk-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th class="num">Articles</th>
+            <th class="num">Montant</th>
+            <th class="num">Marge</th>
+            <th>Statut</th>
+            <th>Utilisateur</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of paginatedSales(); track s.id) {
+            <tr>
+              <td data-label="Date">{{ s.date | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td data-label="Client"><span class="bk-client-link">{{ s.client }}</span></td>
+              <td data-label="Articles" class="num">{{ s.itemsCount }}</td>
+              <td data-label="Montant" class="num bk-amount">
+                {{ s.totalAmount | number:'1.0-0' }} FCFA
+              </td>
+              <td data-label="Marge" class="num bk-amount--positive">
+                +{{ s.totalMargin | number:'1.0-0' }} FCFA
+              </td>
+              <td data-label="Statut">
+                <span class="bk-status" [ngClass]="statusClass(s.status)">
+                  <span class="dot"></span> {{ statusLabel(s.status) }}
+                </span>
+              </td>
+              <td data-label="Utilisateur" class="bk-muted">{{ s.userName }}</td>
+              <td data-label="Actions" class="text-end">
+                <div class="bk-actions">
+                  <button class="bk-icon-btn" title="Voir le détail" (click)="viewSale(s)">
+                    <span class="material-icons">visibility</span>
+                  </button>
+                  <button class="bk-icon-btn" title="Modifier" (click)="openEdit(s)">
+                    <span class="material-icons">edit</span>
+                  </button>
+                  <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="askDelete(s)">
+                    <span class="material-icons">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8">
+                <div class="bk-empty">
+                  <span class="material-icons">shopping_cart</span>
+                  <p>Aucune vente trouvée</p>
+                  <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+                    Réinitialiser les filtres
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  @if (totalPages() > 1) {
+    <div class="bk-pagination">
+      <button class="bk-page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+        <span class="material-icons">chevron_left</span>
+      </button>
+      @for (p of [].constructor(totalPages()); track $index) {
+        <button class="bk-page-num" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button class="bk-page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+        <span class="material-icons">chevron_right</span>
+      </button>
+      <span class="bk-page-info">Page {{ currentPage() }} sur {{ totalPages() }}</span>
+    </div>
+  }
+</div>
+
+<!-- ══════════ MODALE DÉTAIL VENTE ══════════ -->
+@if (viewingSale(); as s) {
+  <div class="bk-modal-backdrop" (click)="closeView()">
+    <div class="bk-modal bk-modal--detail" (click)="$event.stopPropagation()">
+      <div class="bk-detail-header">
+        <div class="bk-detail-icon"><span class="material-icons">receipt_long</span></div>
+        <div>
+          <h3>Vente #{{ s.id }}</h3>
+          <span class="bk-status" [ngClass]="statusClass(s.status)">
+            <span class="dot"></span> {{ statusLabel(s.status) }}
+          </span>
+        </div>
+        <button class="bk-icon-btn" (click)="closeView()"><span class="material-icons">close</span></button>
+      </div>
+      <div class="bk-detail-body">
+        <div class="bk-detail-row"><span>Client</span><strong>{{ s.client }}</strong></div>
+        <div class="bk-detail-row"><span>Date</span><strong>{{ s.date | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+        <div class="bk-detail-row"><span>Utilisateur</span><strong>{{ s.userName }}</strong></div>
+        <div class="bk-detail-row"><span>Articles</span><strong>{{ s.itemsCount }}</strong></div>
+        <div class="bk-detail-row">
+          <span>Montant total</span>
+          <strong class="bk-amount">{{ s.totalAmount | number:'1.0-0' }} FCFA</strong>
+        </div>
+        <div class="bk-detail-row">
+          <span>Marge</span>
+          <strong class="bk-amount--positive">+{{ s.totalMargin | number:'1.0-0' }} FCFA</strong>
+        </div>
+
+        @if (s.items.length > 0) {
+          <div class="bk-detail-items">
+            <h4>Détail des articles</h4>
+            @for (item of s.items; track $index) {
+              <div class="bk-detail-item">
+                <span class="bk-detail-item-name">{{ item.productName }}</span>
+                <span class="bk-detail-item-qty">× {{ item.quantity }}</span>
+                <span class="bk-detail-item-price">{{ item.unitPrice | number:'1.0-0' }} FCFA</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <div class="bk-modal-footer">
+        <button class="btn btn-outline-secondary" (click)="closeView()">Fermer</button>
+        <button class="btn btn-primary" (click)="closeView(); openEdit(s)">
+          <span class="material-icons">edit</span> Modifier
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODALE ÉDITER ══════════ -->
+@if (editingSale(); as s) {
+  <div class="bk-modal-backdrop" (click)="closeEdit()">
+    <div class="bk-modal" (click)="$event.stopPropagation()">
+      <div class="bk-modal__header">
+        <h5>Modifier la vente</h5>
+        <button class="bk-icon-btn" (click)="closeEdit()"><span class="material-icons">close</span></button>
+      </div>
+      <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="bk-modal__body">
+        <label class="bk-field"><span>Client</span><input class="form-control bk-input-plain" formControlName="client" /></label>
+        <label class="bk-field"><span>Date</span><input type="datetime-local" class="form-control bk-input-plain" formControlName="date" /></label>
+        <label class="bk-field"><span>Statut</span>
+          <select class="form-control bk-input-plain" formControlName="status">
+            <option value="paid">Payée</option>
+            <option value="pending">En attente</option>
+          </select>
+        </label>
+        <div class="bk-modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODALE NOUVELLE VENTE ══════════ -->
+@if (showAddModal()) {
+  <div class="bk-modal-backdrop" (click)="closeAdd()">
+    <div class="bk-modal" (click)="$event.stopPropagation()">
+      <div class="bk-modal__header">
+        <h5>Nouvelle vente</h5>
+        <button class="bk-icon-btn" (click)="closeAdd()"><span class="material-icons">close</span></button>
+      </div>
+      <form [formGroup]="addForm" (ngSubmit)="saveAdd()" class="bk-modal__body">
+        <label class="bk-field"><span>Client</span><input class="form-control bk-input-plain" formControlName="client" /></label>
+        <label class="bk-field"><span>Date</span><input type="datetime-local" class="form-control bk-input-plain" formControlName="date" /></label>
+        <label class="bk-field"><span>Nombre d'articles</span><input type="number" class="form-control bk-input-plain" formControlName="itemsCount" /></label>
+        <label class="bk-field"><span>Montant total (FCFA)</span><input type="number" class="form-control bk-input-plain" formControlName="totalAmount" /></label>
+        <label class="bk-field"><span>Marge (FCFA)</span><input type="number" class="form-control bk-input-plain" formControlName="totalMargin" /></label>
+        <label class="bk-field"><span>Statut</span>
+          <select class="form-control bk-input-plain" formControlName="status">
+            <option value="paid">Payée</option>
+            <option value="pending">En attente</option>
+          </select>
+        </label>
+        <div class="bk-modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeAdd()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Créer la vente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODALE CONFIRMATION SUPPRESSION ══════════ -->
+@if (confirmDeleteId()) {
+  <div class="bk-modal-backdrop" (click)="cancelDelete()">
+    <div class="bk-modal bk-modal--confirm" (click)="$event.stopPropagation()">
+      <div class="bk-confirm-icon">
+        <span class="material-icons">warning</span>
+      </div>
+      <h5>Supprimer cette vente ?</h5>
+      <p>Cette action est irréversible. La vente sera définitivement supprimée.</p>
+      <div class="bk-modal-footer">
+        <button class="btn btn-outline-secondary" (click)="cancelDelete()">Annuler</button>
+        <button class="btn btn-danger" (click)="confirmDelete()">Supprimer</button>
+      </div>
+    </div>
+  </div>
+}
