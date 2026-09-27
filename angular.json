@@ -88,6 +88,9 @@
             },
             "development": {
               "buildTarget": "bilanko-admin:build:development"
+            },
+            "local": {
+              "buildTarget": "bilanko-admin:build:local"
             }
           },
           "defaultConfiguration": "development"

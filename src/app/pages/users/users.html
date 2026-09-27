@@ -220,8 +220,8 @@
             </span>
           </strong>
         </div>
-        <div class="bk-detail-row"><span>Inscrit le</span><strong>{{ user.createdAt }}</strong></div>
-        <div class="bk-detail-row"><span>Dernière connexion</span><strong>{{ user.lastLogin }}</strong></div>
+        <div class="bk-detail-row"><span>Inscrit le</span><strong>{{ user.createdAt | TimeAgoPipe }}</strong></div>
+        <div class="bk-detail-row"><span>Dernière connexion</span><strong>{{ user.lastLogin | TimeAgoPipe }}</strong></div>
         <div class="bk-detail-row"><span>Produits créés</span><strong>{{ user.productsCount }}</strong></div>
       </div>
 

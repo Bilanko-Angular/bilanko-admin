@@ -1,18 +1,21 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AdminUser, UserService, UserRole } from '../../services/user.service';
+import { UserManagementStoreService } from '../../service/store/user-management/user-management-store.service';
 import { SearchService } from '../../services/search.service';
+import {AdminUser} from '../../models/user-management/admin-user';
+import {UserRole} from '../../models/type/user-role';
+import {TimeAgoPipe} from '../../pipe/time-ago.pipe-pipe';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CommonModule],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule, TimeAgoPipe],
   templateUrl: './users.html',
   styleUrl: './users.css',
 })
 export class Users {
-  private userService = inject(UserService);
+  private userService = inject(UserManagementStoreService);
   private searchService = inject(SearchService);
   private fb = inject(FormBuilder);
 
@@ -110,7 +113,7 @@ export class Users {
   }
 
   openAdd() {
-    this.addForm.reset({ role: 'USER', status: 'active' });
+    this.addForm.reset({ role: 'MERCHANT', status: 'active' });
     this.showAddModal.set(true);
   }
   closeAdd() { this.showAddModal.set(false); }
@@ -200,4 +203,7 @@ export class Users {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  protected readonly TimeAgoPipePipe = TimeAgoPipePipe;
+  protected readonly TimeAgoPipe = TimeAgoPipe;
 }
