@@ -28,7 +28,7 @@ export class UserStoreService {
     if (typeof localStorage === 'undefined') return;
     const token = localStorage.getItem('bilanko_jwt_token');
     if (!token) {
-      this.router.navigate(['/connexion']);
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -42,7 +42,7 @@ export class UserStoreService {
     } catch (error) {
       console.error('Failed to load user', error);
       this.error.set('Impossible de charger le profil');
-      this.router.navigate(['/connexion']);
+      this.router.navigate(['/login']);
     } finally {
       this.isLoading.set(false);
     }
@@ -110,6 +110,6 @@ export class UserStoreService {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('bilanko_jwt_token');
     }
-    this.router.navigate(['/connexion']);
+    this.router.navigate(['/login']);
   }
 }

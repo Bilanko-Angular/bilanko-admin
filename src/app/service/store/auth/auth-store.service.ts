@@ -58,5 +58,9 @@ export class AuthStoreService {
     return null;
   }
 
+  isLoggedIn(): boolean {
+    return !!this.tokenSignal();
+  }
+
 
 }

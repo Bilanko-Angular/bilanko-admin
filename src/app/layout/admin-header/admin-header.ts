@@ -1,7 +1,7 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
+import { AuthStoreService } from '../../service/store/auth/auth-store.service';
 import { ThemeService } from '../../service/app/theme/theme.service';
 import { SearchService } from '../../services/search.service';
 import { NotificationsBell } from '../../components/notifications-bell/notifications-bell';
@@ -14,7 +14,7 @@ import { NotificationsBell } from '../../components/notifications-bell/notificat
   styleUrls: ['./admin-header.css'],
 })
 export class AdminHeaderComponent {
-  private auth = inject(AuthService);
+  private auth = inject(AuthStoreService);
   private router = inject(Router);
   private searchService = inject(SearchService);
   protected themeService = inject(ThemeService);
