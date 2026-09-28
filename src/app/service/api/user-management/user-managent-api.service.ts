@@ -30,7 +30,7 @@ export class UserManagentApiService {
     const response = await apiClient.get<Page<AdminUserResponseDTO>>(`${this.basePath}/search`, {
       params: {
         keyword: params.keyword || undefined,
-        active: params.active || undefined,
+        active: params.active,
         role: params.role || undefined,
         page: params.page ?? 0,
         size: params.size ?? 10,

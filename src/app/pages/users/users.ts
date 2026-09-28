@@ -1,11 +1,16 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { UserManagementStoreService } from '../../service/store/user-management/user-management-store.service';
 import { SearchService } from '../../services/search.service';
-import {AdminUser} from '../../models/user-management/admin-user';
-import {UserRole} from '../../models/type/user-role';
-import {TimeAgoPipe} from '../../pipe/time-ago.pipe-pipe';
+import { AdminUser } from '../../models/user-management/admin-user';
+import { UserRole } from '../../models/type/user-role';
+import { TimeAgoPipe } from '../../pipe/time-ago.pipe-pipe';
+import { AdminSummaryDTO } from '../../models/DTO/user-management/AdminSummaryDTO';
+import { AdminUserCreateRequest } from '../../models/DTO/user-management/AdminUserCreateRequest';
+import { AdminUserUpdateRequest } from '../../models/DTO/user-management/AdminUserUpdateRequest';
 
 @Component({
   selector: 'app-users',
@@ -14,61 +19,39 @@ import {TimeAgoPipe} from '../../pipe/time-ago.pipe-pipe';
   templateUrl: './users.html',
   styleUrl: './users.css',
 })
-export class Users {
-  private userService = inject(UserManagementStoreService);
-  private searchService = inject(SearchService);
-  private fb = inject(FormBuilder);
+export class Users implements OnInit {
+  private readonly userService = inject(UserManagementStoreService);
+  private readonly searchService = inject(SearchService);
+  private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly searchTrigger$ = new Subject<string>();
+  private readonly pageSize = 10;
+
+  // ─── Store (lecture) ──────────────────────────────
+  readonly users = this.userService.users;
+  readonly isLoading = this.userService.isLoading;
+  readonly error = this.userService.error;
+  readonly totalPages = this.userService.totalPage;
+  readonly totalUsers = this.userService.totalUser;
+  readonly currentPageIndex = this.userService.actualIndex;
 
   // ─── Recherche & filtres ──────────────────────────
   get searchTerm() { return this.searchService.term; }
   statusFilter = signal<'all' | 'active' | 'blocked'>('all');
-  roleFilter   = signal<'all' | UserRole>('all');
+  roleFilter = signal<'all' | UserRole>('all');
 
-  private allUsers = this.userService.list();
-
-  // ─── Statistiques en haut de page ─────────────────
-  stats = computed(() => {
-    const list = this.allUsers();
-    const total = list.length;
-    const active = list.filter(u => u.status === 'active').length;
-    const blocked = list.filter(u => u.status === 'blocked').length;
-    const newThisMonth = list.filter(u => {
-      const [d, m, y] = u.createdAt.split('/').map(Number);
-      const now = new Date();
-      return m === now.getMonth() + 1 && y === now.getFullYear();
-    }).length;
-    return { total, active, blocked, newThisMonth };
+  // ─── Statistiques ─────────────────────────────────
+  stats = signal<AdminSummaryDTO>({
+    totalUsers: 0,
+    activeUsers: 0,
+    blockedUsers: 0,
+    newUsersThisMonth: 0,
   });
+  statsLoading = signal(true);
 
-  // ─── Liste filtrée ────────────────────────────────
-  filteredUsers = computed(() => {
-    let users = this.allUsers();
-    const term = this.searchTerm().toLowerCase().trim();
-    if (term) {
-      users = users.filter(u =>
-        u.name.toLowerCase().includes(term) ||
-        u.email.toLowerCase().includes(term) ||
-        u.phone.includes(term) ||
-        u.city.toLowerCase().includes(term)
-      );
-    }
-    const status = this.statusFilter();
-    if (status !== 'all') users = users.filter(u => u.status === status);
-
-    const role = this.roleFilter();
-    if (role !== 'all') users = users.filter(u => u.role === role);
-
-    return users;
-  });
-
-  // ─── Pagination ───────────────────────────────────
-  pageSize = 6;
-  currentPage = signal(1);
-  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredUsers().length / this.pageSize)));
-  paginatedUsers = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredUsers().slice(start, start + this.pageSize);
-  });
+  // ─── Skeletons ────────────────────────────────────
+  readonly skeletonRows = Array.from({ length: 6 }, (_, i) => i);
 
   // ─── Modales ──────────────────────────────────────
   editingUser = signal<AdminUser | null>(null);
@@ -76,91 +59,176 @@ export class Users {
   showAddModal = signal(false);
 
   editForm = this.fb.group({
-    name:  ['', Validators.required],
+    name: ['', Validators.required],
+    subname: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', Validators.required],
-    role:  ['USER' as UserRole, Validators.required],
-    city:  [''],
+    phone: [''],
+    city: [''],
   });
 
   addForm = this.fb.group({
-    name:  ['', Validators.required],
+    name: ['', Validators.required],
+    subname: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', Validators.required],
-    role:  ['USER' as UserRole, Validators.required],
-    city:  [''],
-    status: ['active' as 'active' | 'blocked', Validators.required],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
+  ngOnInit(): void {
+    this.searchTrigger$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => void this.fetchUsers(0));
+
+    void this.loadSummary();
+    void this.fetchUsers();
+  }
+
+  // ─── Chargement ───────────────────────────────────
+  private async loadSummary(): Promise<void> {
+    this.statsLoading.set(true);
+    const summary = await this.userService.summary();
+    this.stats.set(summary);
+    this.statsLoading.set(false);
+  }
+
+  private async fetchUsers(page = 0): Promise<void> {
+    const keyword = this.searchTerm().trim() || undefined;
+    const status = this.statusFilter();
+    const role = this.roleFilter();
+
+    const hasFilters = !!keyword || status !== 'all' || role !== 'all';
+
+    if (hasFilters) {
+      await this.userService.search({
+        keyword,
+        active: status === 'all' ? undefined : status === 'active',
+        role: role === 'all' ? undefined : role,
+        page,
+        size: this.pageSize,
+      });
+    } else {
+      await this.userService.loadPage(page, this.pageSize);
+    }
+  }
+
+  onSearchChange(value: string): void {
+    this.searchTerm.set(value);
+    this.searchTrigger$.next(value.trim());
+  }
+
+  onStatusFilterChange(value: 'all' | 'active' | 'blocked'): void {
+    this.statusFilter.set(value);
+    void this.fetchUsers(0);
+  }
+
+  onRoleFilterChange(value: 'all' | UserRole): void {
+    this.roleFilter.set(value);
+    void this.fetchUsers(0);
+  }
+
   // ─── Actions ──────────────────────────────────────
-  openEdit(user: AdminUser) {
+  openEdit(user: AdminUser): void {
     this.editingUser.set(user);
     this.editForm.setValue({
-      name: user.name, email: user.email, phone: user.phone,
-      role: user.role, city: user.city,
+      name: user.name,
+      subname: user.subname,
+      email: user.email,
+      phone: user.phone ?? '',
+      city: user.city ?? '',
     });
   }
-  closeEdit() { this.editingUser.set(null); }
 
-  saveEdit() {
+  closeEdit(): void {
+    this.editingUser.set(null);
+  }
+
+  async saveEdit(): Promise<void> {
     const user = this.editingUser();
     if (!user || this.editForm.invalid) {
       this.editForm.markAllAsTouched();
       return;
     }
-    this.userService.update(user.id, this.editForm.value as Partial<AdminUser>);
-    this.closeEdit();
+
+    const f = this.editForm.getRawValue();
+    const payload: AdminUserUpdateRequest = {
+      name: f.name!,
+      subname: f.subname!,
+      email: f.email!,
+      phoneNumber: f.phone || undefined,
+      adresse: f.city || undefined,
+    };
+
+    const updated = await this.userService.update(user.id, payload);
+    if (updated) {
+      this.closeEdit();
+      void this.loadSummary();
+    }
   }
 
-  openAdd() {
-    this.addForm.reset({ role: 'MERCHANT', status: 'active' });
+  openAdd(): void {
+    this.addForm.reset();
     this.showAddModal.set(true);
   }
-  closeAdd() { this.showAddModal.set(false); }
 
-  saveAdd() {
+  closeAdd(): void {
+    this.showAddModal.set(false);
+  }
+
+  async saveAdd(): Promise<void> {
     if (this.addForm.invalid) {
       this.addForm.markAllAsTouched();
       return;
     }
-    const f = this.addForm.value;
-    const newUser: AdminUser = {
-      id: Date.now(),
+
+    const f = this.addForm.getRawValue();
+    const payload: AdminUserCreateRequest = {
       name: f.name!,
+      subname: f.subname!,
       email: f.email!,
-      phone: f.phone!,
-      role: f.role as UserRole,
-      status: f.status as 'active' | 'blocked',
-      city: f.city || '—',
-      createdAt: new Date().toLocaleDateString('fr-FR'),
-      lastLogin: 'Jamais',
-      productsCount: 0,
+      password: f.password!,
     };
-    this.userService.add(newUser);
-    this.closeAdd();
+
+    const created = await this.userService.add(payload);
+    if (created) {
+      this.closeAdd();
+      void this.loadSummary();
+    }
   }
 
-  viewUser(user: AdminUser) { this.viewingUser.set(user); }
-  closeView() { this.viewingUser.set(null); }
+  viewUser(user: AdminUser): void {
+    this.viewingUser.set(user);
+  }
 
-  toggleBlock(user: AdminUser) {
+  closeView(): void {
+    this.viewingUser.set(null);
+  }
+
+  async toggleBlock(user: AdminUser): Promise<void> {
     const action = user.status === 'active' ? 'bloquer' : 'débloquer';
-    if (confirm(`Voulez-vous vraiment ${action} ${user.name} ?`)) {
-      this.userService.toggleBlock(user.id);
-    }
+    if (!confirm(`Voulez-vous vraiment ${action} ${this.fullName(user)} ?`)) return;
+
+    const updated = await this.userService.toggleBlock(user.id);
+    if (updated) void this.loadSummary();
   }
 
-  remove(user: AdminUser) {
-    if (confirm(`Supprimer définitivement ${user.name} ? Cette action est irréversible.`)) {
-      this.userService.delete(user.id);
+  async remove(user: AdminUser): Promise<void> {
+    if (!confirm(`Supprimer définitivement ${this.fullName(user)} ? Cette action est irréversible.`)) {
+      return;
     }
+
+    const ok = await this.userService.delete(user.id);
+    if (ok) void this.loadSummary();
   }
 
   // ─── Utilitaires ──────────────────────────────────
-  initial(name: string) { return name.charAt(0).toUpperCase(); }
+  fullName(user: AdminUser): string {
+    return [user.name, user.subname].filter(Boolean).join(' ').trim() || user.email;
+  }
+
+  initial(user: AdminUser): string {
+    return (user.name || user.email || '?').charAt(0).toUpperCase();
+  }
 
   avatarColor(name: string): string {
-    // Couleur stable par utilisateur basée sur son nom
     const colors = ['#05DF72', '#04C966', '#03A654', '#0284C7', '#7C3AED', '#D97706', '#DC2626', '#0F766E'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -168,31 +236,45 @@ export class Users {
   }
 
   roleLabel(role: UserRole): string {
-    return role === 'ADMIN' ? 'Administrateur' : role === 'MANAGER' ? 'Gestionnaire' : 'Utilisateur';
+    return role === 'ADMIN' ? 'Administrateur' : 'Marchand';
   }
 
   roleBadgeClass(role: UserRole): string {
-    return role === 'ADMIN' ? 'bk-role--admin' : role === 'MANAGER' ? 'bk-role--manager' : 'bk-role--user';
+    return role === 'ADMIN' ? 'bk-role--admin' : 'bk-role--user';
   }
 
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
+  goToPage(page1Based: number): void {
+    const total = this.totalPages();
+    if (page1Based < 1 || page1Based > total) return;
+    void this.fetchUsers(page1Based - 1);
   }
 
-  clearSearch() { this.searchService.term.set(''); }
+  clearSearch(): void {
+    this.searchTerm.set('');
+    void this.fetchUsers(0);
+  }
 
-  clearFilters() {
-    this.searchService.term.set('');
+  clearFilters(): void {
+    this.searchTerm.set('');
     this.statusFilter.set('all');
     this.roleFilter.set('all');
-    this.currentPage.set(1);
+    void this.fetchUsers(0);
   }
 
-  exportCSV() {
-    const rows = this.filteredUsers();
-    const header = ['ID', 'Nom', 'Email', 'Téléphone', 'Rôle', 'Statut', 'Ville', 'Inscrit le', 'Dernière connexion'];
+  exportCSV(): void {
+    const rows = this.users();
+    const header = ['ID', 'Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Statut', 'Ville', 'Inscrit le', 'Dernière connexion'];
     const data = rows.map(u => [
-      u.id, u.name, u.email, u.phone, u.role, u.status, u.city, u.createdAt, u.lastLogin,
+      u.id,
+      u.name,
+      u.subname,
+      u.email,
+      u.phone ?? '',
+      u.role,
+      u.status,
+      u.city,
+      u.createdAt,
+      u.lastLogin,
     ]);
     const csv = [header, ...data].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -203,7 +285,4 @@ export class Users {
     a.click();
     URL.revokeObjectURL(url);
   }
-
-  protected readonly TimeAgoPipePipe = TimeAgoPipePipe;
-  protected readonly TimeAgoPipe = TimeAgoPipe;
 }

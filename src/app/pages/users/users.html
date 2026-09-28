@@ -15,34 +15,46 @@
 
   <!-- ══════ STATISTIQUES ══════ -->
   <div class="bk-stats">
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">group</span></div>
-      <div>
-        <div class="bk-stat__label">Total utilisateurs</div>
-        <div class="bk-stat__value">{{ stats().total }}</div>
+    @if (statsLoading()) {
+      @for (_ of [1, 2, 3, 4]; track $index) {
+        <div class="bk-stat bk-stat--skeleton">
+          <div class="bk-skel bk-skel--icon"></div>
+          <div class="bk-skel-col">
+            <div class="bk-skel bk-skel--label"></div>
+            <div class="bk-skel bk-skel--value"></div>
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">group</span></div>
+        <div>
+          <div class="bk-stat__label">Total utilisateurs</div>
+          <div class="bk-stat__value">{{ stats().totalUsers }}</div>
+        </div>
       </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">verified_user</span></div>
-      <div>
-        <div class="bk-stat__label">Comptes actifs</div>
-        <div class="bk-stat__value">{{ stats().active }}</div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">verified_user</span></div>
+        <div>
+          <div class="bk-stat__label">Comptes actifs</div>
+          <div class="bk-stat__value">{{ stats().activeUsers }}</div>
+        </div>
       </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--red"><span class="material-icons">block</span></div>
-      <div>
-        <div class="bk-stat__label">Comptes bloqués</div>
-        <div class="bk-stat__value">{{ stats().blocked }}</div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--red"><span class="material-icons">block</span></div>
+        <div>
+          <div class="bk-stat__label">Comptes bloqués</div>
+          <div class="bk-stat__value">{{ stats().blockedUsers }}</div>
+        </div>
       </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">person_add</span></div>
-      <div>
-        <div class="bk-stat__label">Nouveaux ce mois</div>
-        <div class="bk-stat__value">{{ stats().newThisMonth }}</div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">person_add</span></div>
+        <div>
+          <div class="bk-stat__label">Nouveaux ce mois</div>
+          <div class="bk-stat__value">{{ stats().newUsersThisMonth }}</div>
+        </div>
       </div>
-    </div>
+    }
   </div>
 
   <!-- ══════ BARRE D'OUTILS ══════ -->
@@ -53,7 +65,7 @@
         type="text"
         placeholder="Rechercher par nom, email, ville..."
         [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+        (ngModelChange)="onSearchChange($event)"
       />
       @if (searchTerm()) {
         <button type="button" (click)="clearSearch()" title="Effacer">
@@ -62,17 +74,22 @@
       }
     </div>
 
-    <select class="bk-toolbar__select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage.set(1)">
+    <select
+      class="bk-toolbar__select"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusFilterChange($event)">
       <option value="all">Tous les statuts</option>
       <option value="active">Actifs</option>
       <option value="blocked">Bloqués</option>
     </select>
 
-    <select class="bk-toolbar__select" [(ngModel)]="roleFilter" (ngModelChange)="currentPage.set(1)">
+    <select
+      class="bk-toolbar__select"
+      [ngModel]="roleFilter()"
+      (ngModelChange)="onRoleFilterChange($event)">
       <option value="all">Tous les rôles</option>
       <option value="ADMIN">Administrateur</option>
-      <option value="MANAGER">Gestionnaire</option>
-      <option value="USER">Utilisateur</option>
+      <option value="MERCHANT">Marchand</option>
     </select>
 
     @if (searchTerm() || statusFilter() !== 'all' || roleFilter() !== 'all') {
@@ -81,10 +98,18 @@
       </button>
     }
 
-    <button class="bk-btn-export" (click)="exportCSV()">
+    <button class="bk-btn-export" (click)="exportCSV()" [disabled]="isLoading()">
       <span class="material-icons">download</span> Exporter
     </button>
   </div>
+
+  @if (error()) {
+    <div class="bk-error-banner">
+      <span class="material-icons">error_outline</span>
+      <span>{{ error() }}</span>
+      <button type="button" class="bk-btn-reset" (click)="clearFilters()">Réessayer</button>
+    </div>
+  }
 
   <!-- ══════ TABLEAU ══════ -->
   <div class="bk-table-card">
@@ -102,91 +127,129 @@
           </tr>
         </thead>
         <tbody>
-  @for (user of paginatedUsers(); track user.id) {
-    <tr>
-      <td data-label="Utilisateur">
-        <div class="bk-user-cell">
-          <div class="bk-avatar-lg" [style.background]="avatarColor(user.name)">
-            {{ initial(user.name) }}
-          </div>
-          <div class="bk-user-info">
-            <div class="bk-user-name">{{ user.name }}</div>
-            <div class="bk-user-email">{{ user.email }}</div>
-            <div class="bk-user-phone">{{ user.phone }}</div>
-          </div>
-        </div>
-      </td>
-      <td data-label="Rôle">
-        <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">
-          {{ roleLabel(user.role) }}
-        </span>
-      </td>
-      <td data-label="Ville" class="bk-city">{{ user.city }}</td>
-      <td data-label="Produits" class="num">{{ user.productsCount }}</td>
-      <td data-label="Statut">
-        <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
-          <span class="dot"></span>
-          {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
-        </span>
-      </td>
-      <td data-label="Dernière connexion" class="bk-last-login">{{ user.lastLogin }}</td>
-      <td data-label="Actions" class="text-end">
-        <div class="bk-actions">
-          <button class="bk-icon-btn" title="Voir les détails" (click)="viewUser(user)">
-            <span class="material-icons">visibility</span>
-          </button>
-          <button class="bk-icon-btn" title="Modifier" (click)="openEdit(user)">
-            <span class="material-icons">edit</span>
-          </button>
-          <button class="bk-icon-btn" title="Bloquer / Débloquer" (click)="toggleBlock(user)">
-            <span class="material-icons">{{ user.status === 'active' ? 'lock' : 'lock_open' }}</span>
-          </button>
-          <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(user)">
-            <span class="material-icons">delete</span>
-          </button>
-        </div>
-      </td>
-    </tr>
-  } @empty {
-    <tr>
-      <td colspan="7">
-        <div class="bk-empty">
-          <span class="material-icons">group_off</span>
-          <p>Aucun utilisateur ne correspond aux critères</p>
-          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
-            Réinitialiser les filtres
-          </button>
-        </div>
-      </td>
-    </tr>
-  }
-</tbody>
+          @if (isLoading()) {
+            @for (_ of skeletonRows; track $index) {
+              <tr class="bk-row--skeleton">
+                <td>
+                  <div class="bk-user-cell">
+                    <div class="bk-skel bk-skel--avatar"></div>
+                    <div class="bk-skel-col">
+                      <div class="bk-skel bk-skel--name"></div>
+                      <div class="bk-skel bk-skel--email"></div>
+                      <div class="bk-skel bk-skel--phone"></div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="bk-skel bk-skel--badge"></div></td>
+                <td><div class="bk-skel bk-skel--city"></div></td>
+                <td class="num"><div class="bk-skel bk-skel--num"></div></td>
+                <td><div class="bk-skel bk-skel--badge"></div></td>
+                <td><div class="bk-skel bk-skel--login"></div></td>
+                <td class="text-end">
+                  <div class="bk-actions bk-actions--skel">
+                    <div class="bk-skel bk-skel--action"></div>
+                    <div class="bk-skel bk-skel--action"></div>
+                    <div class="bk-skel bk-skel--action"></div>
+                    <div class="bk-skel bk-skel--action"></div>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (user of users(); track user.id) {
+              <tr>
+                <td data-label="Utilisateur">
+                  <div class="bk-user-cell">
+                    <div class="bk-avatar-lg" [style.background]="avatarColor(fullName(user))">
+                      {{ initial(user) }}
+                    </div>
+                    <div class="bk-user-info">
+                      <div class="bk-user-name">{{ fullName(user) }}</div>
+                      <div class="bk-user-email">{{ user.email }}</div>
+                      <div class="bk-user-phone">{{ user.phone || '—' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td data-label="Rôle">
+                  <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">
+                    {{ roleLabel(user.role) }}
+                  </span>
+                </td>
+                <td data-label="Ville" class="bk-city">{{ user.city || '—' }}</td>
+                <td data-label="Produits" class="num">{{ user.productsCount }}</td>
+                <td data-label="Statut">
+                  <span class="bk-badge" [class.bk-badge--negative]="user.status === 'blocked'">
+                    <span class="dot"></span>
+                    {{ user.status === 'active' ? 'Actif' : 'Bloqué' }}
+                  </span>
+                </td>
+                <td data-label="Dernière connexion" class="bk-last-login">
+                  {{ user.lastLogin | TimeAgoPipe }}
+                </td>
+                <td data-label="Actions" class="text-end">
+                  <div class="bk-actions">
+                    <button class="bk-icon-btn" title="Voir les détails" (click)="viewUser(user)">
+                      <span class="material-icons">visibility</span>
+                    </button>
+                    <button class="bk-icon-btn" title="Modifier" (click)="openEdit(user)">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button class="bk-icon-btn" title="Bloquer / Débloquer" (click)="toggleBlock(user)">
+                      <span class="material-icons">{{ user.status === 'active' ? 'lock' : 'lock_open' }}</span>
+                    </button>
+                    <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(user)">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <div class="bk-empty">
+                    <span class="material-icons">group_off</span>
+                    <p>Aucun utilisateur ne correspond aux critères</p>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+                      Réinitialiser les filtres
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
       </table>
     </div>
   </div>
 
   <!-- ══════ PAGINATION ══════ -->
-  @if (totalPages() > 1) {
+  @if (!isLoading() && totalPages() > 1) {
     <div class="bk-pagination">
-      <button class="bk-page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+      <button
+        class="bk-page-btn"
+        [disabled]="currentPageIndex() === 0"
+        (click)="goToPage(currentPageIndex())">
         <span class="material-icons">chevron_left</span>
       </button>
 
       @for (p of [].constructor(totalPages()); track $index) {
         <button
           class="bk-page-num"
-          [class.active]="currentPage() === $index + 1"
+          [class.active]="currentPageIndex() === $index"
           (click)="goToPage($index + 1)">
           {{ $index + 1 }}
         </button>
       }
 
-      <button class="bk-page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+      <button
+        class="bk-page-btn"
+        [disabled]="currentPageIndex() >= totalPages() - 1"
+        (click)="goToPage(currentPageIndex() + 2)">
         <span class="material-icons">chevron_right</span>
       </button>
 
       <span class="bk-page-info">
-        Page {{ currentPage() }} sur {{ totalPages() }} — {{ filteredUsers().length }} utilisateur(s)
+        Page {{ currentPageIndex() + 1 }} sur {{ totalPages() }} — {{ totalUsers() }} utilisateur(s)
       </span>
     </div>
   }
@@ -197,11 +260,11 @@
   <div class="bk-modal-backdrop" (click)="closeView()">
     <div class="bk-modal bk-modal--detail" (click)="$event.stopPropagation()">
       <div class="bk-detail-header">
-        <div class="bk-avatar-xl" [style.background]="avatarColor(user.name)">
-          {{ initial(user.name) }}
+        <div class="bk-avatar-xl" [style.background]="avatarColor(fullName(user))">
+          {{ initial(user) }}
         </div>
         <div>
-          <h3 class="mb-1">{{ user.name }}</h3>
+          <h3 class="mb-1">{{ fullName(user) }}</h3>
           <span class="bk-role" [ngClass]="roleBadgeClass(user.role)">{{ roleLabel(user.role) }}</span>
         </div>
         <button class="bk-icon-btn" (click)="closeView()"><span class="material-icons">close</span></button>
@@ -209,8 +272,8 @@
 
       <div class="bk-detail-body">
         <div class="bk-detail-row"><span>Email</span><strong>{{ user.email }}</strong></div>
-        <div class="bk-detail-row"><span>Téléphone</span><strong>{{ user.phone }}</strong></div>
-        <div class="bk-detail-row"><span>Ville</span><strong>{{ user.city }}</strong></div>
+        <div class="bk-detail-row"><span>Téléphone</span><strong>{{ user.phone || '—' }}</strong></div>
+        <div class="bk-detail-row"><span>Ville</span><strong>{{ user.city || '—' }}</strong></div>
         <div class="bk-detail-row">
           <span>Statut</span>
           <strong>
@@ -245,8 +308,12 @@
       </div>
       <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="bk-modal__body">
         <label class="bk-field">
-          <span>Nom complet</span>
+          <span>Nom</span>
           <input class="form-control bk-input-plain" formControlName="name" />
+        </label>
+        <label class="bk-field">
+          <span>Prénom</span>
+          <input class="form-control bk-input-plain" formControlName="subname" />
         </label>
         <label class="bk-field">
           <span>Email</span>
@@ -257,20 +324,12 @@
           <input class="form-control bk-input-plain" formControlName="phone" />
         </label>
         <label class="bk-field">
-          <span>Rôle</span>
-          <select class="form-control bk-input-plain" formControlName="role">
-            <option value="ADMIN">Administrateur</option>
-            <option value="MANAGER">Gestionnaire</option>
-            <option value="USER">Utilisateur</option>
-          </select>
-        </label>
-        <label class="bk-field">
           <span>Ville</span>
           <input class="form-control bk-input-plain" formControlName="city" />
         </label>
         <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading()">Enregistrer</button>
         </div>
       </form>
     </div>
@@ -287,39 +346,24 @@
       </div>
       <form [formGroup]="addForm" (ngSubmit)="saveAdd()" class="bk-modal__body">
         <label class="bk-field">
-          <span>Nom complet</span>
+          <span>Nom</span>
           <input class="form-control bk-input-plain" formControlName="name" />
+        </label>
+        <label class="bk-field">
+          <span>Prénom</span>
+          <input class="form-control bk-input-plain" formControlName="subname" />
         </label>
         <label class="bk-field">
           <span>Email</span>
           <input class="form-control bk-input-plain" formControlName="email" />
         </label>
         <label class="bk-field">
-          <span>Téléphone</span>
-          <input class="form-control bk-input-plain" formControlName="phone" />
-        </label>
-        <label class="bk-field">
-          <span>Rôle</span>
-          <select class="form-control bk-input-plain" formControlName="role">
-            <option value="ADMIN">Administrateur</option>
-            <option value="MANAGER">Gestionnaire</option>
-            <option value="USER">Utilisateur</option>
-          </select>
-        </label>
-        <label class="bk-field">
-          <span>Ville</span>
-          <input class="form-control bk-input-plain" formControlName="city" />
-        </label>
-        <label class="bk-field">
-          <span>Statut</span>
-          <select class="form-control bk-input-plain" formControlName="status">
-            <option value="active">Actif</option>
-            <option value="blocked">Bloqué</option>
-          </select>
+          <span>Mot de passe</span>
+          <input class="form-control bk-input-plain" type="password" formControlName="password" />
         </label>
         <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeAdd()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Créer l'utilisateur</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading()">Créer l'utilisateur</button>
         </div>
       </form>
     </div>
