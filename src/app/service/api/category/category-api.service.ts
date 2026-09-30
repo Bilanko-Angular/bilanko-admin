@@ -10,6 +10,7 @@ import {
   CleanCategoryDTO
 } from '../../../models/DTO/category/CategoryDTOs';
 
+
 export interface SearchCategoryParams {
   name?: string;
   categoryType?: CategoryType;
@@ -63,5 +64,10 @@ export class CategoryApiService {
 
   async deleteCategory(payload: CategoryDTO): Promise<void> {
     await apiClient.delete<void>(`${this.basePath}/${payload.id}`, { data: payload });
+  }
+
+  async findAllByType(payload:CategoryType):Promise<CleanCategoryDTO[]>{
+    const response=await apiClient.get<CleanCategoryDTO[]>(`${this.basePath}/all?categoryType=${payload}`);
+    return response.data
   }
 }

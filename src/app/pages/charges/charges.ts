@@ -10,6 +10,7 @@ import { AdminCharge } from '../../models/charge/adminCharge';
 import { AdminChargeSummaryDTO } from '../../models/DTO/charge/AdminChargeSummaryDTO';
 import { AdminChargeCreateRequest } from '../../models/DTO/charge/AdminChargeCreateRequest';
 import { AdminChargeUpdateRequest } from '../../models/DTO/charge/AdminChargeUpdateRequest';
+import {CategoryStoreService} from '../../service/store/category/category-store.service';
 
 type PeriodFilter = 'all' | 'today' | 'week' | 'month';
 
@@ -26,6 +27,7 @@ export class Charges implements OnInit {
   private readonly searchService = inject(SearchService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly categoryService=inject(CategoryStoreService)
 
   private readonly searchTrigger = new Subject<string>();
   private readonly pageSize = 10;
@@ -37,6 +39,7 @@ export class Charges implements OnInit {
   readonly totalPages = this.chargeService.totalPage;
   readonly totalCharges = this.chargeService.totalCharge;
   readonly currentPageIndex = this.chargeService.actualIndex;
+  readonly categories = this.categoryService.charges;
 
   // ─── Recherche & filtres ──────────────────────────
   get searchTerm() { return this.searchService.term; }

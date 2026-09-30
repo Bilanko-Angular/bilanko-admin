@@ -2,7 +2,13 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { AdminCategory } from '../../../models/category/admin-category';
 import { CategoryApiService, SearchCategoryParams } from '../../api/category/category-api.service';
 import { CategoryMapper } from '../../../mapper/CategoryMapper';
-import { CategoryDTO, CategorySearch, CategorySummaryDTO, CategoryType } from '../../../models/DTO/category/CategoryDTOs';
+import {
+  CategoryDTO,
+  CategorySearch,
+  CategorySummaryDTO,
+  CategoryType,
+  CleanCategoryDTO
+} from '../../../models/DTO/category/CategoryDTOs';
 import { Page } from '../../../models/DTO/template/page';
 
 @Injectable({ providedIn: 'root' })
@@ -15,7 +21,7 @@ export class CategoryStoreService {
   private readonly _totalElements = signal<number>(0);
   private readonly _isLoading = signal<boolean>(false);
   private readonly _error = signal<string | null>(null);
-  
+
   private readonly _summary = signal<CategorySummaryDTO | null>(null);
 
   private readonly pageSize = 10;
@@ -29,9 +35,20 @@ export class CategoryStoreService {
   readonly summaryData = this._summary.asReadonly();
 
   readonly isEmpty = computed(() => this._categories().length === 0);
-  readonly hasNextPage = computed(() => this._actualIndex() < this._totalPage() - 1);
-  readonly hasPreviousPage = computed(() => this._actualIndex() > 0);
+  // readonly hasNextPage = computed(() => this._actualIndex() < this._totalPage() - 1);
+  // readonly hasPreviousPage = computed(() => this._actualIndex() > 0);
 
+  private readonly _charges = signal<CleanCategoryDTO[]>([]);
+  readonly charges = this._charges.asReadonly();
+
+  async loadCharges(): Promise<void> {
+    try {
+      this._charges.set(await this.apiService.findAllByType(CategoryType.CHARGE));
+    } catch (error) {
+      console.error('[CategoryStore] find error', error);
+      this._charges.set([]);
+    }
+  }
   async search(params: SearchCategoryParams): Promise<void> {
     this._isLoading.set(true);
     this._error.set(null);
@@ -83,13 +100,13 @@ export class CategoryStoreService {
     this._error.set(null);
 
     try {
-      const response = await this.apiService.createCategory(payload);
+      await this.apiService.createCategory(payload);
       // Backend returns CleanCategoryDTO. We need to convert it or reload the page.
       // Easiest is to reload the current page.
       await this.loadPage(undefined, this._actualIndex(), this.pageSize);
       await this.summary(); // update stats
-      
-      // We don't have all data in CleanCategoryDTO to convert to AdminCategory perfectly, 
+
+      // We don't have all data in CleanCategoryDTO to convert to AdminCategory perfectly,
       // but returning a mapped version could be done. We'll return null and rely on the reload.
       return null;
     } catch (error) {
