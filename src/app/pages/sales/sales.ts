@@ -9,7 +9,7 @@ import { SaleItemRequestDTO } from '../../models/DTO/sale/SaleDTOs';
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CommonModule, CurrencyPipe, DatePipe, DecimalPipe],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule, DatePipe, DecimalPipe],
   templateUrl: './sales.html',
   styleUrl: './sales.css',
 })

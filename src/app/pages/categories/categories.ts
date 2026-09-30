@@ -9,7 +9,7 @@ import { CategoryType } from '../../models/DTO/category/CategoryDTOs';
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CommonModule, DatePipe, DecimalPipe],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule, DecimalPipe],
   templateUrl: './categories.html',
   styleUrl: './categories.css',
 })
@@ -70,7 +70,7 @@ export class Categories implements OnInit {
       this.editForm.markAllAsTouched();
       return;
     }
-    
+
     this.categoryService.updateCategory(c.id, {
       id: c.id,
       name: this.editForm.value.name!.trim(),
@@ -90,7 +90,7 @@ export class Categories implements OnInit {
       this.addForm.markAllAsTouched();
       return;
     }
-    
+
     this.categoryService.add({
       id: 0,
       name: this.addForm.value.name!.trim(),
@@ -125,8 +125,8 @@ export class Categories implements OnInit {
     }
   }
 
-  clearSearch() { 
-    this.searchService.term.set(''); 
+  clearSearch() {
+    this.searchService.term.set('');
     this.loadData();
   }
 
