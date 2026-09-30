@@ -70,11 +70,11 @@ export class Sales implements OnInit {
       this.editForm.markAllAsTouched();
       return;
     }
-    
+
     // Le formulaire d'édition actuel ne permet pas de modifier les articles
     // Pour l'API, il faut envoyer les items (SaleItemRequestDTO). On enverra un tableau vide pour l'instant
     // TODO: Implémenter la gestion des articles dans le formulaire de modification
-    
+
     this.saleService.update(s.id, {
       customerName: this.editForm.value.client!,
       saleDate: this.editForm.value.date ? new Date(this.editForm.value.date).toISOString() : undefined,
@@ -98,19 +98,19 @@ export class Sales implements OnInit {
       this.addForm.markAllAsTouched();
       return;
     }
-    
+
     const f = this.addForm.value;
-    
+
     // Le formulaire de création actuel manque d'une section pour ajouter des articles (produits, quantité, prix).
     // On envoie un article factice pour que l'API ne rejette pas la requête
     // TODO: Créer un composant pour gérer la liste des articles
-    
+
     const items: SaleItemRequestDTO[] = [{
        productId: 1, // ID factice
        quantity: 1,
        unitPrice: 0
     }];
-    
+
     this.saleService.add({
       userId: 1, // ID factice - l'interface utilisateur pour la sélection d'utilisateur n'est pas encore faite
       customerName: f.client!,
@@ -135,18 +135,19 @@ export class Sales implements OnInit {
     const apiPage = p - 1;
     if (apiPage >= 0 && apiPage < this.saleService.totalPage()) {
       if (this.searchTerm().trim()) {
-        this.saleService.search({ keyword: this.searchTerm().trim(), page: apiPage });
+        this.saleService.search({keyword: this.searchTerm().trim(), page: apiPage})
+          .then(r =>{}).catch(e=>{console.log(e)});
       } else {
         this.saleService.loadPage(apiPage);
       }
     }
   }
 
-  clearSearch() { 
+  clearSearch() {
     this.searchService.term.set('');
     this.loadData();
   }
-  
+
   clearFilters() {
     this.searchService.term.set('');
     this.saleService.loadPage(0);

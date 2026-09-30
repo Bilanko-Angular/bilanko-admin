@@ -4,7 +4,6 @@ import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angu
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { ChargeStoreService } from '../../service/store/charges/charge-store.service';
-import { CategoryStoreService } from '../../service/store/category/category-store.service';
 import { UserStoreService } from '../../service/store/user/user-store.service';
 import { SearchService } from '../../services/search.service';
 import { AdminCharge } from '../../models/charge/adminCharge';
@@ -23,13 +22,12 @@ type PeriodFilter = 'all' | 'today' | 'week' | 'month';
 })
 export class Charges implements OnInit {
   private readonly chargeService = inject(ChargeStoreService);
-  private readonly categoryService = inject(CategoryStoreService);
   private readonly userStore = inject(UserStoreService);
   private readonly searchService = inject(SearchService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
-  private readonly searchTrigger$ = new Subject<string>();
+  private readonly searchTrigger = new Subject<string>();
   private readonly pageSize = 10;
 
   // ─── Store (lecture) ──────────────────────────────
@@ -39,7 +37,6 @@ export class Charges implements OnInit {
   readonly totalPages = this.chargeService.totalPage;
   readonly totalCharges = this.chargeService.totalCharge;
   readonly currentPageIndex = this.chargeService.actualIndex;
-  readonly categories = this.categoryService.list();
 
   // ─── Recherche & filtres ──────────────────────────
   get searchTerm() { return this.searchService.term; }
@@ -80,7 +77,7 @@ export class Charges implements OnInit {
   });
 
   ngOnInit(): void {
-    this.searchTrigger$
+    this.searchTrigger
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => void this.fetchCharges(0));
 
@@ -144,7 +141,7 @@ export class Charges implements OnInit {
 
   onSearchChange(value: string): void {
     this.searchTerm.set(value);
-    this.searchTrigger$.next(value.trim());
+    this.searchTrigger.next(value.trim());
   }
 
   onCategoryFilterChange(value: 'all' | number | string): void {
