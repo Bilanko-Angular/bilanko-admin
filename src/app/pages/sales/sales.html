@@ -12,36 +12,38 @@
   </div>
 
   <!-- Stats -->
-  <div class="bk-stats">
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">payments</span></div>
-      <div>
-        <div class="bk-stat__label">Chiffre d'affaires</div>
-        <div class="bk-stat__value">{{ stats().revenue | number:'1.0-0' }} FCFA</div>
+  @if (saleService.summaryData(); as stats) {
+    <div class="bk-stats">
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">payments</span></div>
+        <div>
+          <div class="bk-stat__label">Chiffre d'affaires</div>
+          <div class="bk-stat__value">{{ stats.totalAmount | number:'1.0-0' }} FCFA</div>
+        </div>
+      </div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">trending_up</span></div>
+        <div>
+          <div class="bk-stat__label">Marge totale</div>
+          <div class="bk-stat__value">{{ stats.totalMargin | number:'1.0-0' }} FCFA</div>
+        </div>
+      </div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">calendar_month</span></div>
+        <div>
+          <div class="bk-stat__label">CA ce mois</div>
+          <div class="bk-stat__value">{{ stats.currentMonthAmount | number:'1.0-0' }} FCFA</div>
+        </div>
+      </div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--purple"><span class="material-icons">receipt_long</span></div>
+        <div>
+          <div class="bk-stat__label">Nombre de ventes</div>
+          <div class="bk-stat__value">{{ stats.totalCount }}</div>
+        </div>
       </div>
     </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">trending_up</span></div>
-      <div>
-        <div class="bk-stat__label">Marge totale</div>
-        <div class="bk-stat__value">{{ stats().margin | number:'1.0-0' }} FCFA</div>
-      </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">calendar_month</span></div>
-      <div>
-        <div class="bk-stat__label">CA ce mois</div>
-        <div class="bk-stat__value">{{ stats().monthRevenue | number:'1.0-0' }} FCFA</div>
-      </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--purple"><span class="material-icons">receipt_long</span></div>
-      <div>
-        <div class="bk-stat__label">Nombre de ventes</div>
-        <div class="bk-stat__value">{{ stats().count }}</div>
-      </div>
-    </div>
-  </div>
+  }
 
   <!-- Toolbar avec Exporter -->
   <div class="bk-toolbar">
@@ -51,27 +53,14 @@
         type="text"
         placeholder="Rechercher par client, utilisateur..."
         [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+        (ngModelChange)="onSearchChange($event)"
       />
       @if (searchTerm()) {
         <button type="button" (click)="clearSearch()"><span class="material-icons">close</span></button>
       }
     </div>
 
-    <select class="bk-toolbar__select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage.set(1)">
-      <option value="all">Tous les statuts</option>
-      <option value="paid">Payées</option>
-      <option value="pending">En attente</option>
-    </select>
-
-    <select class="bk-toolbar__select" [(ngModel)]="periodFilter" (ngModelChange)="currentPage.set(1)">
-      <option value="all">Toutes les périodes</option>
-      <option value="today">Aujourd'hui</option>
-      <option value="week">Cette semaine</option>
-      <option value="month">Ce mois</option>
-    </select>
-
-    @if (searchTerm() || statusFilter() !== 'all' || periodFilter() !== 'all') {
+    @if (searchTerm()) {
       <button class="bk-btn-reset" (click)="clearFilters()">
         <span class="material-icons">filter_alt_off</span> Réinitialiser
       </button>
@@ -84,8 +73,7 @@
 
   <!-- Info filtrée -->
   <div class="bk-filtered-info">
-    <span>{{ filteredSales().length }} vente(s) — Total filtré :</span>
-    <strong>{{ filteredTotal() | number:'1.0-0' }} FCFA</strong>
+    <span>{{ saleService.totalElements() }} vente(s)</span>
   </div>
 
   <!-- Tableau -->
@@ -99,27 +87,21 @@
             <th class="num">Articles</th>
             <th class="num">Montant</th>
             <th class="num">Marge</th>
-            <th>Statut</th>
             <th>Utilisateur</th>
             <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
-          @for (s of paginatedSales(); track s.id) {
+          @for (s of saleService.sales(); track s.id) {
             <tr>
-              <td data-label="Date">{{ s.date | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td data-label="Client"><span class="bk-client-link">{{ s.client }}</span></td>
-              <td data-label="Articles" class="num">{{ s.itemsCount }}</td>
+              <td data-label="Date">{{ s.saleDate | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td data-label="Client"><span class="bk-client-link">{{ s.customerName }}</span></td>
+              <td data-label="Articles" class="num">{{ s.itemCount }}</td>
               <td data-label="Montant" class="num bk-amount">
                 {{ s.totalAmount | number:'1.0-0' }} FCFA
               </td>
               <td data-label="Marge" class="num bk-amount--positive">
                 +{{ s.totalMargin | number:'1.0-0' }} FCFA
-              </td>
-              <td data-label="Statut">
-                <span class="bk-status" [ngClass]="statusClass(s.status)">
-                  <span class="dot"></span> {{ statusLabel(s.status) }}
-                </span>
               </td>
               <td data-label="Utilisateur" class="bk-muted">{{ s.userName }}</td>
               <td data-label="Actions" class="text-end">
@@ -138,7 +120,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="8">
+              <td colspan="7">
                 <div class="bk-empty">
                   <span class="material-icons">shopping_cart</span>
                   <p>Aucune vente trouvée</p>
@@ -155,20 +137,20 @@
   </div>
 
   <!-- Pagination -->
-  @if (totalPages() > 1) {
+  @if (saleService.totalPage() > 1) {
     <div class="bk-pagination">
-      <button class="bk-page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+      <button class="bk-page-btn" [disabled]="saleService.actualIndex() === 0" (click)="goToPage(saleService.actualIndex())">
         <span class="material-icons">chevron_left</span>
       </button>
-      @for (p of [].constructor(totalPages()); track $index) {
-        <button class="bk-page-num" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">
+      @for (p of [].constructor(saleService.totalPage()); track $index) {
+        <button class="bk-page-num" [class.active]="saleService.actualIndex() === $index" (click)="goToPage($index + 1)">
           {{ $index + 1 }}
         </button>
       }
-      <button class="bk-page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+      <button class="bk-page-btn" [disabled]="saleService.actualIndex() === saleService.totalPage() - 1" (click)="goToPage(saleService.actualIndex() + 2)">
         <span class="material-icons">chevron_right</span>
       </button>
-      <span class="bk-page-info">Page {{ currentPage() }} sur {{ totalPages() }}</span>
+      <span class="bk-page-info">Page {{ saleService.actualIndex() + 1 }} sur {{ saleService.totalPage() }}</span>
     </div>
   }
 </div>
@@ -181,17 +163,14 @@
         <div class="bk-detail-icon"><span class="material-icons">receipt_long</span></div>
         <div>
           <h3>Vente #{{ s.id }}</h3>
-          <span class="bk-status" [ngClass]="statusClass(s.status)">
-            <span class="dot"></span> {{ statusLabel(s.status) }}
-          </span>
         </div>
         <button class="bk-icon-btn" (click)="closeView()"><span class="material-icons">close</span></button>
       </div>
       <div class="bk-detail-body">
-        <div class="bk-detail-row"><span>Client</span><strong>{{ s.client }}</strong></div>
-        <div class="bk-detail-row"><span>Date</span><strong>{{ s.date | date:'dd/MM/yyyy HH:mm' }}</strong></div>
-        <div class="bk-detail-row"><span>Utilisateur</span><strong>{{ s.userName }}</strong></div>
-        <div class="bk-detail-row"><span>Articles</span><strong>{{ s.itemsCount }}</strong></div>
+        <div class="bk-detail-row"><span>Client</span><strong>{{ s.customerName }}</strong></div>
+        <div class="bk-detail-row"><span>Date</span><strong>{{ s.saleDate | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+        <div class="bk-detail-row"><span>Utilisateur</span><strong>{{ s.userName }} {{ s.userSubname }}</strong></div>
+        <div class="bk-detail-row"><span>Articles</span><strong>{{ s.itemCount }}</strong></div>
         <div class="bk-detail-row">
           <span>Montant total</span>
           <strong class="bk-amount">{{ s.totalAmount | number:'1.0-0' }} FCFA</strong>
@@ -233,14 +212,11 @@
         <button class="bk-icon-btn" (click)="closeEdit()"><span class="material-icons">close</span></button>
       </div>
       <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="bk-modal__body">
+        <div class="alert alert-warning mb-3">
+          <strong>Attention:</strong> L'édition des articles n'est pas encore gérée dans ce formulaire.
+        </div>
         <label class="bk-field"><span>Client</span><input class="form-control bk-input-plain" formControlName="client" /></label>
         <label class="bk-field"><span>Date</span><input type="datetime-local" class="form-control bk-input-plain" formControlName="date" /></label>
-        <label class="bk-field"><span>Statut</span>
-          <select class="form-control bk-input-plain" formControlName="status">
-            <option value="paid">Payée</option>
-            <option value="pending">En attente</option>
-          </select>
-        </label>
         <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()">Annuler</button>
           <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -259,17 +235,11 @@
         <button class="bk-icon-btn" (click)="closeAdd()"><span class="material-icons">close</span></button>
       </div>
       <form [formGroup]="addForm" (ngSubmit)="saveAdd()" class="bk-modal__body">
+        <div class="alert alert-info mb-3">
+          <strong>Info:</strong> La sélection d'utilisateur et l'ajout de multiples articles n'est pas encore géré dans l'interface. Un article factice sera ajouté avec l'ID utilisateur 1.
+        </div>
         <label class="bk-field"><span>Client</span><input class="form-control bk-input-plain" formControlName="client" /></label>
         <label class="bk-field"><span>Date</span><input type="datetime-local" class="form-control bk-input-plain" formControlName="date" /></label>
-        <label class="bk-field"><span>Nombre d'articles</span><input type="number" class="form-control bk-input-plain" formControlName="itemsCount" /></label>
-        <label class="bk-field"><span>Montant total (FCFA)</span><input type="number" class="form-control bk-input-plain" formControlName="totalAmount" /></label>
-        <label class="bk-field"><span>Marge (FCFA)</span><input type="number" class="form-control bk-input-plain" formControlName="totalMargin" /></label>
-        <label class="bk-field"><span>Statut</span>
-          <select class="form-control bk-input-plain" formControlName="status">
-            <option value="paid">Payée</option>
-            <option value="pending">En attente</option>
-          </select>
-        </label>
         <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeAdd()">Annuler</button>
           <button type="submit" class="btn btn-primary">Créer la vente</button>

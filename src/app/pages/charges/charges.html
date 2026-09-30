@@ -13,34 +13,46 @@
 
   <!-- Stats -->
   <div class="bk-stats">
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">payments</span></div>
-      <div>
-        <div class="bk-stat__label">Total des charges</div>
-        <div class="bk-stat__value">{{ stats().total | number:'1.0-0' }} FCFA</div>
+    @if (statsLoading()) {
+      @for (_ of [1, 2, 3, 4]; track $index) {
+        <div class="bk-stat bk-stat--skeleton">
+          <div class="bk-skel bk-skel--icon"></div>
+          <div class="bk-skel-col">
+            <div class="bk-skel bk-skel--label"></div>
+            <div class="bk-skel bk-skel--value"></div>
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--green"><span class="material-icons">payments</span></div>
+        <div>
+          <div class="bk-stat__label">Total des charges</div>
+          <div class="bk-stat__value">{{ stats().totalSum | number:'1.0-0' }} FCFA</div>
+        </div>
       </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">calendar_month</span></div>
-      <div>
-        <div class="bk-stat__label">Ce mois-ci</div>
-        <div class="bk-stat__value">{{ stats().monthTotal | number:'1.0-0' }} FCFA</div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--orange"><span class="material-icons">calendar_month</span></div>
+        <div>
+          <div class="bk-stat__label">Ce mois-ci</div>
+          <div class="bk-stat__value">{{ stats().currentMonthSum | number:'1.0-0' }} FCFA</div>
+        </div>
       </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">trending_up</span></div>
-      <div>
-        <div class="bk-stat__label">Moyenne par charge</div>
-        <div class="bk-stat__value">{{ stats().avg | number:'1.0-0' }} FCFA</div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--blue"><span class="material-icons">trending_up</span></div>
+        <div>
+          <div class="bk-stat__label">Moyenne par charge</div>
+          <div class="bk-stat__value">{{ stats().averagePrice | number:'1.0-0' }} FCFA</div>
+        </div>
       </div>
-    </div>
-    <div class="bk-stat">
-      <div class="bk-stat__icon bk-stat__icon--purple"><span class="material-icons">receipt_long</span></div>
-      <div>
-        <div class="bk-stat__label">Nombre de charges</div>
-        <div class="bk-stat__value">{{ stats().count }}</div>
+      <div class="bk-stat">
+        <div class="bk-stat__icon bk-stat__icon--purple"><span class="material-icons">receipt_long</span></div>
+        <div>
+          <div class="bk-stat__label">Nombre de charges</div>
+          <div class="bk-stat__value">{{ stats().totalCount }}</div>
+        </div>
       </div>
-    </div>
+    }
   </div>
 
   <!-- Toolbar -->
@@ -51,21 +63,27 @@
         type="text"
         placeholder="Rechercher par libellé, fournisseur..."
         [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+        (ngModelChange)="onSearchChange($event)"
       />
       @if (searchTerm()) {
         <button type="button" (click)="clearSearch()"><span class="material-icons">close</span></button>
       }
     </div>
 
-    <select class="bk-toolbar__select" [(ngModel)]="categoryFilter" (ngModelChange)="currentPage.set(1)">
+    <select
+      class="bk-toolbar__select"
+      [ngModel]="categoryFilter()"
+      (ngModelChange)="onCategoryFilterChange($event)">
       <option value="all">Toutes les catégories</option>
-      @for (cat of categories(); track cat) {
-        <option [value]="cat">{{ cat }}</option>
+      @for (cat of categories(); track cat.id) {
+        <option [value]="cat.id">{{ cat.name }}</option>
       }
     </select>
 
-    <select class="bk-toolbar__select" [(ngModel)]="periodFilter" (ngModelChange)="currentPage.set(1)">
+    <select
+      class="bk-toolbar__select"
+      [ngModel]="periodFilter()"
+      (ngModelChange)="onPeriodFilterChange($event)">
       <option value="all">Toutes les périodes</option>
       <option value="today">Aujourd'hui</option>
       <option value="week">Cette semaine</option>
@@ -78,15 +96,22 @@
       </button>
     }
 
-    <button class="bk-btn-export" (click)="exportCSV()">
+    <button class="bk-btn-export" (click)="exportCSV()" [disabled]="isLoading()">
       <span class="material-icons">download</span> Exporter
     </button>
   </div>
 
-  <!-- Info filtrée -->
+  @if (error()) {
+    <div class="bk-error-banner">
+      <span class="material-icons">error_outline</span>
+      <span>{{ error() }}</span>
+      <button type="button" class="bk-btn-reset" (click)="clearFilters()">Réessayer</button>
+    </div>
+  }
+
+  <!-- Info -->
   <div class="bk-filtered-info">
-    <span>{{ filteredCharges().length }} charge(s) — Total filtré :</span>
-    <strong>{{ filteredTotal() | number:'1.0-0' }} FCFA</strong>
+    <span>{{ totalCharges() }} charge(s)</span>
   </div>
 
   <!-- Tableau -->
@@ -105,44 +130,64 @@
           </tr>
         </thead>
         <tbody>
-          @for (c of paginatedCharges(); track c.id) {
-            <tr>
-              <td data-label="Date">{{ c.date | date:'dd/MM/yyyy' }}</td>
-              <td data-label="Libellé"><span class="bk-charge-label">{{ c.label }}</span></td>
-              <td data-label="Fournisseur" class="bk-muted">{{ c.supplier }}</td>
-              <td data-label="Catégorie">
-                <span class="bk-cat" [ngClass]="categoryClass(c.category)">{{ c.category }}</span>
-              </td>
-              <td data-label="Utilisateur" class="bk-muted">{{ c.userName }}</td>
-              <td data-label="Montant" class="num bk-amount">
-                {{ c.amount | number:'1.0-0' }} FCFA
-              </td>
-              <td data-label="Actions" class="text-end">
-                <div class="bk-actions">
-                  <button class="bk-icon-btn" title="Voir" (click)="viewCharge(c)">
-                    <span class="material-icons">visibility</span>
-                  </button>
-                  <button class="bk-icon-btn" title="Modifier" (click)="openEdit(c)">
-                    <span class="material-icons">edit</span>
-                  </button>
-                  <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(c)">
-                    <span class="material-icons">delete</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7">
-                <div class="bk-empty">
-                  <span class="material-icons">receipt_long</span>
-                  <p>Aucune charge trouvée</p>
-                  <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
-                    Réinitialiser les filtres
-                  </button>
-                </div>
-              </td>
-            </tr>
+          @if (isLoading()) {
+            @for (_ of skeletonRows; track $index) {
+              <tr class="bk-row--skeleton">
+                <td><div class="bk-skel bk-skel--date"></div></td>
+                <td><div class="bk-skel bk-skel--label-cell"></div></td>
+                <td><div class="bk-skel bk-skel--supplier"></div></td>
+                <td><div class="bk-skel bk-skel--badge"></div></td>
+                <td><div class="bk-skel bk-skel--user"></div></td>
+                <td class="num"><div class="bk-skel bk-skel--amount"></div></td>
+                <td class="text-end">
+                  <div class="bk-actions bk-actions--skel">
+                    <div class="bk-skel bk-skel--action"></div>
+                    <div class="bk-skel bk-skel--action"></div>
+                    <div class="bk-skel bk-skel--action"></div>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (c of charges(); track c.id) {
+              <tr>
+                <td data-label="Date">{{ c.date | date:'dd/MM/yyyy' }}</td>
+                <td data-label="Libellé"><span class="bk-charge-label">{{ c.label }}</span></td>
+                <td data-label="Fournisseur" class="bk-muted">{{ c.supplier }}</td>
+                <td data-label="Catégorie">
+                  <span class="bk-cat" [ngClass]="categoryClass(c.categoryName)">{{ c.categoryName }}</span>
+                </td>
+                <td data-label="Utilisateur" class="bk-muted">{{ fullUserName(c) }}</td>
+                <td data-label="Montant" class="num bk-amount">
+                  {{ c.amount | number:'1.0-0' }} FCFA
+                </td>
+                <td data-label="Actions" class="text-end">
+                  <div class="bk-actions">
+                    <button class="bk-icon-btn" title="Voir" (click)="viewCharge(c)">
+                      <span class="material-icons">visibility</span>
+                    </button>
+                    <button class="bk-icon-btn" title="Modifier" (click)="openEdit(c)">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button class="bk-icon-btn bk-icon-btn--danger" title="Supprimer" (click)="remove(c)">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <div class="bk-empty">
+                    <span class="material-icons">receipt_long</span>
+                    <p>Aucune charge trouvée</p>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+                      Réinitialiser les filtres
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
@@ -150,20 +195,34 @@
   </div>
 
   <!-- Pagination -->
-  @if (totalPages() > 1) {
+  @if (!isLoading() && totalPages() > 1) {
     <div class="bk-pagination">
-      <button class="bk-page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+      <button
+        class="bk-page-btn"
+        [disabled]="currentPageIndex() === 0"
+        (click)="goToPage(currentPageIndex())">
         <span class="material-icons">chevron_left</span>
       </button>
+
       @for (p of [].constructor(totalPages()); track $index) {
-        <button class="bk-page-num" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">
+        <button
+          class="bk-page-num"
+          [class.active]="currentPageIndex() === $index"
+          (click)="goToPage($index + 1)">
           {{ $index + 1 }}
         </button>
       }
-      <button class="bk-page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+
+      <button
+        class="bk-page-btn"
+        [disabled]="currentPageIndex() >= totalPages() - 1"
+        (click)="goToPage(currentPageIndex() + 2)">
         <span class="material-icons">chevron_right</span>
       </button>
-      <span class="bk-page-info">Page {{ currentPage() }} sur {{ totalPages() }}</span>
+
+      <span class="bk-page-info">
+        Page {{ currentPageIndex() + 1 }} sur {{ totalPages() }} — {{ totalCharges() }} charge(s)
+      </span>
     </div>
   }
 </div>
@@ -176,7 +235,7 @@
         <div class="bk-detail-icon"><span class="material-icons">receipt_long</span></div>
         <div>
           <h3>{{ c.label }}</h3>
-          <span class="bk-cat" [ngClass]="categoryClass(c.category)">{{ c.category }}</span>
+          <span class="bk-cat" [ngClass]="categoryClass(c.categoryName)">{{ c.categoryName }}</span>
         </div>
         <button class="bk-icon-btn" (click)="closeView()"><span class="material-icons">close</span></button>
       </div>
@@ -184,10 +243,7 @@
         <div class="bk-detail-row"><span>Montant</span><strong class="bk-amount">{{ c.amount | number:'1.0-0' }} FCFA</strong></div>
         <div class="bk-detail-row"><span>Fournisseur</span><strong>{{ c.supplier }}</strong></div>
         <div class="bk-detail-row"><span>Date</span><strong>{{ c.date | date:'dd/MM/yyyy' }}</strong></div>
-        <div class="bk-detail-row"><span>Utilisateur</span><strong>{{ c.userName }}</strong></div>
-        @if (c.notes) {
-          <div class="bk-detail-row"><span>Notes</span><strong>{{ c.notes }}</strong></div>
-        }
+        <div class="bk-detail-row"><span>Utilisateur</span><strong>{{ fullUserName(c) }}</strong></div>
       </div>
       <div class="bk-modal-footer">
         <button class="btn btn-outline-secondary" (click)="closeView()">Fermer</button>
@@ -213,14 +269,16 @@
         <label class="bk-field"><span>Montant (FCFA)</span><input type="number" class="form-control bk-input-plain" formControlName="amount" /></label>
         <label class="bk-field"><span>Date</span><input type="date" class="form-control bk-input-plain" formControlName="date" /></label>
         <label class="bk-field"><span>Catégorie</span>
-          <select class="form-control bk-input-plain" formControlName="category">
-            @for (cat of categories(); track cat) { <option [value]="cat">{{ cat }}</option> }
+          <select class="form-control bk-input-plain" formControlName="categoryId">
+            <option [ngValue]="null">Sans catégorie</option>
+            @for (cat of categories(); track cat.id) {
+              <option [ngValue]="cat.id">{{ cat.name }}</option>
+            }
           </select>
         </label>
-        <label class="bk-field"><span>Notes (optionnel)</span><input class="form-control bk-input-plain" formControlName="notes" /></label>
         <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading()">Enregistrer</button>
         </div>
       </form>
     </div>
@@ -241,20 +299,16 @@
         <label class="bk-field"><span>Montant (FCFA)</span><input type="number" class="form-control bk-input-plain" formControlName="amount" /></label>
         <label class="bk-field"><span>Date</span><input type="date" class="form-control bk-input-plain" formControlName="date" /></label>
         <label class="bk-field"><span>Catégorie</span>
-          <select class="form-control bk-input-plain" formControlName="category">
-            <option value="Transport">Transport</option>
-            <option value="Énergie">Énergie</option>
-            <option value="Fournitures">Fournitures</option>
-            <option value="Communication">Communication</option>
-            <option value="Entretien">Entretien</option>
-            <option value="Loyer">Loyer</option>
-            <option value="Autre">Autre</option>
+          <select class="form-control bk-input-plain" formControlName="categoryId">
+            <option [ngValue]="null">Sans catégorie</option>
+            @for (cat of categories(); track cat.id) {
+              <option [ngValue]="cat.id">{{ cat.name }}</option>
+            }
           </select>
         </label>
-        <label class="bk-field"><span>Notes (optionnel)</span><input class="form-control bk-input-plain" formControlName="notes" /></label>
         <div class="bk-modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeAdd()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Créer la charge</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading()">Créer la charge</button>
         </div>
       </form>
     </div>

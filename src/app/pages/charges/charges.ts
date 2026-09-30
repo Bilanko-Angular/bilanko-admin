@@ -1,8 +1,18 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import { AdminCharge, ChargeService, ChargeCategory } from '../../services/charge.service';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { ChargeStoreService } from '../../service/store/charges/charge-store.service';
+import { CategoryStoreService } from '../../service/store/category/category-store.service';
+import { UserStoreService } from '../../service/store/user/user-store.service';
 import { SearchService } from '../../services/search.service';
+import { AdminCharge } from '../../models/charge/adminCharge';
+import { AdminChargeSummaryDTO } from '../../models/DTO/charge/AdminChargeSummaryDTO';
+import { AdminChargeCreateRequest } from '../../models/DTO/charge/AdminChargeCreateRequest';
+import { AdminChargeUpdateRequest } from '../../models/DTO/charge/AdminChargeUpdateRequest';
+
+type PeriodFilter = 'all' | 'today' | 'week' | 'month';
 
 @Component({
   selector: 'app-charges',
@@ -11,89 +21,44 @@ import { SearchService } from '../../services/search.service';
   templateUrl: './charges.html',
   styleUrl: './charges.css',
 })
-export class Charges {
-  private chargeService = inject(ChargeService);
-  private searchService = inject(SearchService);
-  private fb = inject(FormBuilder);
+export class Charges implements OnInit {
+  private readonly chargeService = inject(ChargeStoreService);
+  private readonly categoryService = inject(CategoryStoreService);
+  private readonly userStore = inject(UserStoreService);
+  private readonly searchService = inject(SearchService);
+  private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
+  private readonly searchTrigger$ = new Subject<string>();
+  private readonly pageSize = 10;
+
+  // ─── Store (lecture) ──────────────────────────────
+  readonly charges = this.chargeService.charges;
+  readonly isLoading = this.chargeService.isLoading;
+  readonly error = this.chargeService.error;
+  readonly totalPages = this.chargeService.totalPage;
+  readonly totalCharges = this.chargeService.totalCharge;
+  readonly currentPageIndex = this.chargeService.actualIndex;
+  readonly categories = this.categoryService.list();
+
+  // ─── Recherche & filtres ──────────────────────────
   get searchTerm() { return this.searchService.term; }
+  categoryFilter = signal<'all' | number>('all');
+  periodFilter = signal<PeriodFilter>('all');
 
-  categoryFilter = signal<'all' | ChargeCategory>('all');
-  periodFilter = signal<'all' | 'today' | 'week' | 'month'>('all');
-
-  private allCharges = this.chargeService.list();
-
-  // Stats
-  stats = computed(() => {
-    const list = this.allCharges();
-    const total = list.reduce((s, c) => s + c.amount, 0);
-    const now = new Date();
-    const thisMonth = list.filter(c => {
-      const d = new Date(c.date);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    const monthTotal = thisMonth.reduce((s, c) => s + c.amount, 0);
-    const avg = list.length ? total / list.length : 0;
-    return { total, monthTotal, avg, count: list.length };
+  // ─── Statistiques ─────────────────────────────────
+  stats = signal<AdminChargeSummaryDTO>({
+    totalCount: 0,
+    totalSum: 0,
+    currentMonthSum: 0,
+    averagePrice: 0,
   });
+  statsLoading = signal(true);
 
-  // Catégories disponibles
-  categories = computed(() => {
-    const set = new Set<ChargeCategory>();
-    this.allCharges().forEach(c => set.add(c.category));
-    return Array.from(set).sort();
-  });
+  // ─── Skeletons ────────────────────────────────────
+  readonly skeletonRows = Array.from({ length: 6 }, (_, i) => i);
 
-  // Liste filtrée
-  filteredCharges = computed(() => {
-    let list = this.allCharges();
-    const term = this.searchTerm().toLowerCase().trim();
-    if (term) {
-      list = list.filter(c =>
-        c.label.toLowerCase().includes(term) ||
-        c.supplier.toLowerCase().includes(term) ||
-        c.userName.toLowerCase().includes(term)
-      );
-    }
-    const cat = this.categoryFilter();
-    if (cat !== 'all') list = list.filter(c => c.category === cat);
-
-    const period = this.periodFilter();
-    if (period !== 'all') {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      list = list.filter(c => {
-        const d = new Date(c.date);
-        if (period === 'today') return d >= today;
-        if (period === 'week') {
-          const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - today.getDay());
-          return d >= weekStart;
-        }
-        if (period === 'month') {
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        }
-        return true;
-      });
-    }
-    return list;
-  });
-
-  // Total filtré
-  filteredTotal = computed(() =>
-    this.filteredCharges().reduce((s, c) => s + c.amount, 0)
-  );
-
-  // Pagination
-  pageSize = 8;
-  currentPage = signal(1);
-  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredCharges().length / this.pageSize)));
-  paginatedCharges = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredCharges().slice(start, start + this.pageSize);
-  });
-
-  // Modales
+  // ─── Modales ──────────────────────────────────────
   editingCharge = signal<AdminCharge | null>(null);
   viewingCharge = signal<AdminCharge | null>(null);
   showAddModal = signal(false);
@@ -101,112 +66,245 @@ export class Charges {
   editForm = this.fb.group({
     label: ['', Validators.required],
     supplier: ['', Validators.required],
-    amount: [0, [Validators.required, Validators.min(1)]],
+    amount: [0, [Validators.required, Validators.min(0)]],
     date: ['', Validators.required],
-    category: ['Transport' as ChargeCategory, Validators.required],
-    notes: [''],
+    categoryId: [null as number | null],
   });
 
   addForm = this.fb.group({
     label: ['', Validators.required],
     supplier: ['', Validators.required],
-    amount: [0, [Validators.required, Validators.min(1)]],
+    amount: [0, [Validators.required, Validators.min(0)]],
     date: [new Date().toISOString().slice(0, 10), Validators.required],
-    category: ['Transport' as ChargeCategory, Validators.required],
-    notes: [''],
+    categoryId: [null as number | null],
   });
 
-  // Actions
-  openEdit(c: AdminCharge) {
+  ngOnInit(): void {
+    this.searchTrigger$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => void this.fetchCharges(0));
+
+    void this.loadSummary();
+    void this.fetchCharges();
+  }
+
+  // ─── Chargement ───────────────────────────────────
+  private async loadSummary(): Promise<void> {
+    this.statsLoading.set(true);
+    const summary = await this.chargeService.summary();
+    this.stats.set(summary);
+    this.statsLoading.set(false);
+  }
+
+  private async fetchCharges(page = 0): Promise<void> {
+    const keyword = this.searchTerm().trim() || undefined;
+    const categoryId = this.categoryFilter() === 'all' ? undefined : this.categoryFilter() as number;
+    const { startDate, endDate } = this.resolvePeriodRange(this.periodFilter());
+
+    const hasFilters = !!keyword || categoryId !== undefined || !!startDate || !!endDate;
+
+    if (hasFilters) {
+      await this.chargeService.search({
+        keyword,
+        categoryId,
+        startDate,
+        endDate,
+        page,
+        size: this.pageSize,
+      });
+    } else {
+      await this.chargeService.loadPage(page, this.pageSize);
+    }
+  }
+
+  private resolvePeriodRange(period: PeriodFilter): { startDate?: string; endDate?: string } {
+    if (period === 'all') return {};
+
+    const now = new Date();
+    const endDate = this.toIsoDate(now);
+
+    if (period === 'today') {
+      return { startDate: endDate, endDate };
+    }
+
+    if (period === 'week') {
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      return { startDate: this.toIsoDate(weekStart), endDate };
+    }
+
+    // month
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startDate: this.toIsoDate(monthStart), endDate };
+  }
+
+  private toIsoDate(d: Date): string {
+    return d.toISOString().slice(0, 10);
+  }
+
+  onSearchChange(value: string): void {
+    this.searchTerm.set(value);
+    this.searchTrigger$.next(value.trim());
+  }
+
+  onCategoryFilterChange(value: 'all' | number | string): void {
+    this.categoryFilter.set(value === 'all' ? 'all' : Number(value));
+    void this.fetchCharges(0);
+  }
+
+  onPeriodFilterChange(value: PeriodFilter): void {
+    this.periodFilter.set(value);
+    void this.fetchCharges(0);
+  }
+
+  // ─── Actions ──────────────────────────────────────
+  openEdit(c: AdminCharge): void {
     this.editingCharge.set(c);
     this.editForm.setValue({
-      label: c.label, supplier: c.supplier, amount: c.amount,
-      date: c.date, category: c.category, notes: c.notes || '',
+      label: c.label,
+      supplier: c.supplier,
+      amount: c.amount,
+      date: c.date,
+      categoryId: c.categoryId,
     });
   }
-  closeEdit() { this.editingCharge.set(null); }
 
-  saveEdit() {
+  closeEdit(): void {
+    this.editingCharge.set(null);
+  }
+
+  async saveEdit(): Promise<void> {
     const c = this.editingCharge();
     if (!c || this.editForm.invalid) {
       this.editForm.markAllAsTouched();
       return;
     }
-    this.chargeService.update(c.id, this.editForm.value as Partial<AdminCharge>);
-    this.closeEdit();
-  }
 
-  openAdd() {
-    this.addForm.reset({
-      label: '', supplier: '', amount: 0,
-      date: new Date().toISOString().slice(0, 10),
-      category: 'Transport', notes: '',
-    });
-    this.showAddModal.set(true);
-  }
-  closeAdd() { this.showAddModal.set(false); }
-
-  saveAdd() {
-    if (this.addForm.invalid) {
-      this.addForm.markAllAsTouched();
-      return;
-    }
-    const f = this.addForm.value;
-    const newCharge: AdminCharge = {
-      id: Date.now(),
+    const f = this.editForm.getRawValue();
+    const payload: AdminChargeUpdateRequest = {
       label: f.label!,
       supplier: f.supplier!,
       amount: Number(f.amount),
       date: f.date!,
-      category: f.category as ChargeCategory,
-      notes: f.notes || '',
-      userId: 1,
-      userName: 'Admin',
+      categoryId: f.categoryId ?? null,
     };
-    this.chargeService.add(newCharge);
-    this.closeAdd();
-  }
 
-  viewCharge(c: AdminCharge) { this.viewingCharge.set(c); }
-  closeView() { this.viewingCharge.set(null); }
-
-  remove(c: AdminCharge) {
-    if (confirm(`Supprimer la charge "${c.label}" ?`)) {
-      this.chargeService.delete(c.id);
+    const updated = await this.chargeService.update(c.id, payload);
+    if (updated) {
+      this.closeEdit();
+      void this.loadSummary();
     }
   }
 
-  // Utilitaires
-  categoryClass(cat: ChargeCategory): string {
-    const map: Record<ChargeCategory, string> = {
-      'Transport': 'bk-cat--blue',
-      'Énergie': 'bk-cat--orange',
-      'Fournitures': 'bk-cat--purple',
-      'Communication': 'bk-cat--green',
-      'Entretien': 'bk-cat--gray',
-      'Loyer': 'bk-cat--red',
-      'Autre': 'bk-cat--gray',
+  openAdd(): void {
+    this.addForm.reset({
+      label: '',
+      supplier: '',
+      amount: 0,
+      date: new Date().toISOString().slice(0, 10),
+      categoryId: null,
+    });
+    this.showAddModal.set(true);
+  }
+
+  closeAdd(): void {
+    this.showAddModal.set(false);
+  }
+
+  async saveAdd(): Promise<void> {
+    if (this.addForm.invalid) {
+      this.addForm.markAllAsTouched();
+      return;
+    }
+
+    const userId = this.userStore.user()?.id;
+    if (!userId) {
+      alert('Impossible de créer la charge : utilisateur non connecté.');
+      return;
+    }
+
+    const f = this.addForm.getRawValue();
+    const payload: AdminChargeCreateRequest = {
+      label: f.label!,
+      supplier: f.supplier!,
+      amount: Number(f.amount),
+      date: f.date!,
+      categoryId: f.categoryId ?? null,
+      userId,
     };
-    return map[cat] || 'bk-cat--gray';
+
+    const created = await this.chargeService.add(payload);
+    if (created) {
+      this.closeAdd();
+      void this.loadSummary();
+    }
   }
 
-  goToPage(p: number) {
-    if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p);
+  viewCharge(c: AdminCharge): void {
+    this.viewingCharge.set(c);
   }
 
-  clearSearch() { this.searchService.term.set(''); }
+  closeView(): void {
+    this.viewingCharge.set(null);
+  }
 
-  clearFilters() {
-    this.searchService.term.set('');
+  async remove(c: AdminCharge): Promise<void> {
+    if (!confirm(`Supprimer la charge "${c.label}" ?`)) return;
+
+    const ok = await this.chargeService.delete(c.id);
+    if (ok) void this.loadSummary();
+  }
+
+  // ─── Utilitaires ──────────────────────────────────
+  fullUserName(c: AdminCharge): string {
+    return [c.userName, c.userSubname].filter(Boolean).join(' ').trim() || '—';
+  }
+
+  categoryClass(categoryName: string): string {
+    const palette = [
+      'bk-cat--blue',
+      'bk-cat--orange',
+      'bk-cat--purple',
+      'bk-cat--green',
+      'bk-cat--gray',
+      'bk-cat--red',
+    ];
+    let hash = 0;
+    for (let i = 0; i < categoryName.length; i++) {
+      hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return palette[Math.abs(hash) % palette.length];
+  }
+
+  goToPage(page1Based: number): void {
+    const total = this.totalPages();
+    if (page1Based < 1 || page1Based > total) return;
+    void this.fetchCharges(page1Based - 1);
+  }
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+    void this.fetchCharges(0);
+  }
+
+  clearFilters(): void {
+    this.searchTerm.set('');
     this.categoryFilter.set('all');
     this.periodFilter.set('all');
-    this.currentPage.set(1);
+    void this.fetchCharges(0);
   }
 
-  exportCSV() {
-    const rows = this.filteredCharges();
+  exportCSV(): void {
+    const rows = this.charges();
     const header = ['Date', 'Libellé', 'Fournisseur', 'Catégorie', 'Utilisateur', 'Montant (FCFA)'];
-    const data = rows.map(c => [c.date, c.label, c.supplier, c.category, c.userName, c.amount]);
+    const data = rows.map(c => [
+      c.date,
+      c.label,
+      c.supplier,
+      c.categoryName,
+      this.fullUserName(c),
+      c.amount,
+    ]);
     const csv = [header, ...data].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

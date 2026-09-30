@@ -102,7 +102,7 @@ export class UserStoreService {
   }
 
 
-  // Déconnexion propre : vide le store, retire le token, redirige
+  // Déconnexion propre : vide le charges, retire le token, redirige
   clearUser(): void {
     this.user.set(null);
     this.notificationPreferences.set(null);

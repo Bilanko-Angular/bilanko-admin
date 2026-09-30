@@ -1,4 +1,4 @@
-// src/app/service/store/auth/auth-store.service.ts
+// src/app/service/charges/auth/auth-charges.service.ts
 
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';

@@ -1,8 +1,10 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import { AdminCategory, CategoryService } from '../../services/category.service';
+import { CategoryStoreService } from '../../service/store/category/category-store.service';
 import { SearchService } from '../../services/search.service';
+import { AdminCategory } from '../../models/category/admin-category';
+import { CategoryType } from '../../models/DTO/category/CategoryDTOs';
 
 @Component({
   selector: 'app-categories',
@@ -11,74 +13,32 @@ import { SearchService } from '../../services/search.service';
   templateUrl: './categories.html',
   styleUrl: './categories.css',
 })
-export class Categories {
-  private categoryService = inject(CategoryService);
+export class Categories implements OnInit {
+  public categoryService = inject(CategoryStoreService);
   private searchService = inject(SearchService);
   private fb = inject(FormBuilder);
 
+  CategoryType = CategoryType; // Expose enum to template
+
   get searchTerm() { return this.searchService.term; }
 
-  // Tri par défaut
-  sortBy = signal<'name' | 'createdAt' | 'productsCount' | 'usersCount'>('name');
-  sortDir = signal<'asc' | 'desc'>('asc');
+  ngOnInit() {
+    this.categoryService.summary();
+    this.loadData();
+  }
 
-  private allCategories = this.categoryService.list();
-
-  // Stats globales
-  stats = computed(() => {
-    const list = this.allCategories();
-    const totalProducts = list.reduce((s, c) => s + c.productsCount, 0);
-    const totalUsers = list.reduce((s, c) => s + c.usersCount, 0);
-    const avgProducts = list.length ? Math.round(totalProducts / list.length) : 0;
-    return {
-      total: list.length,
-      totalProducts,
-      totalUsers,
-      avgProducts,
-    };
-  });
-
-  // Liste filtrée + triée
-  filteredCategories = computed(() => {
-    let list = [...this.allCategories()];
-
-    // Recherche
-    const term = this.searchTerm().toLowerCase().trim();
-    if (term) {
-      list = list.filter(c => c.name.toLowerCase().includes(term));
+  loadData() {
+    if (this.searchTerm().trim()) {
+      this.categoryService.search({ name: this.searchTerm().trim(), page: this.categoryService.actualIndex() });
+    } else {
+      this.categoryService.loadPage(undefined, this.categoryService.actualIndex());
     }
+  }
 
-    // Tri
-    const sortBy = this.sortBy();
-    const dir = this.sortDir() === 'asc' ? 1 : -1;
-    list.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name) * dir;
-        case 'createdAt':
-          return a.createdAt.localeCompare(b.createdAt) * dir;
-        case 'productsCount':
-          return (a.productsCount - b.productsCount) * dir;
-        case 'usersCount':
-          return (a.usersCount - b.usersCount) * dir;
-        default:
-          return 0;
-      }
-    });
-
-    return list;
-  });
-
-  // Pagination
-  pageSize = 8;
-  currentPage = signal(1);
-  totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredCategories().length / this.pageSize))
-  );
-  paginatedCategories = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredCategories().slice(start, start + this.pageSize);
-  });
+  onSearchChange(term: string) {
+    this.searchService.term.set(term);
+    this.categoryService.search({ name: term, page: 0 });
+  }
 
   // Modales
   editingCategory = signal<AdminCategory | null>(null);
@@ -89,16 +49,18 @@ export class Categories {
   // Formulaires
   editForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
+    categoryType: [CategoryType.PRODUCT, Validators.required]
   });
 
   addForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
+    categoryType: [CategoryType.PRODUCT, Validators.required]
   });
 
   // ─── Actions ──────────────────────────────────────
   openEdit(c: AdminCategory) {
     this.editingCategory.set(c);
-    this.editForm.setValue({ name: c.name });
+    this.editForm.setValue({ name: c.name, categoryType: c.categoryType });
   }
   closeEdit() { this.editingCategory.set(null); }
 
@@ -108,13 +70,17 @@ export class Categories {
       this.editForm.markAllAsTouched();
       return;
     }
-    // ✅ On modifie uniquement le nom
-    this.categoryService.update(c.id, { name: this.editForm.value.name!.trim() });
+    
+    this.categoryService.updateCategory(c.id, {
+      id: c.id,
+      name: this.editForm.value.name!.trim(),
+      categoryType: this.editForm.value.categoryType as CategoryType
+    });
     this.closeEdit();
   }
 
   openAdd() {
-    this.addForm.reset({ name: '' });
+    this.addForm.reset({ name: '', categoryType: CategoryType.PRODUCT });
     this.showAddModal.set(true);
   }
   closeAdd() { this.showAddModal.set(false); }
@@ -124,14 +90,12 @@ export class Categories {
       this.addForm.markAllAsTouched();
       return;
     }
-    const newCategory: AdminCategory = {
-      id: Date.now(),
+    
+    this.categoryService.add({
+      id: 0,
       name: this.addForm.value.name!.trim(),
-      createdAt: new Date().toISOString().slice(0, 10),
-      productsCount: 0,
-      usersCount: 0,
-    };
-    this.categoryService.add(newCategory);
+      categoryType: this.addForm.value.categoryType as CategoryType
+    });
     this.closeAdd();
   }
 
@@ -142,44 +106,39 @@ export class Categories {
   cancelDelete() { this.confirmDeleteId.set(null); }
   confirmDelete() {
     const id = this.confirmDeleteId();
-    if (id) this.categoryService.delete(id);
-    this.confirmDeleteId.set(null);
-  }
-
-  // ─── Tri ─────────────────────────────────────────
-  changeSort(field: 'name' | 'createdAt' | 'productsCount' | 'usersCount') {
-    if (this.sortBy() === field) {
-      this.sortDir.update(d => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      this.sortBy.set(field);
-      this.sortDir.set('asc');
+    if (id) {
+       this.categoryService.deleteCategory({ id, name: '', categoryType: CategoryType.PRODUCT }); // name and categoryType not used for delete by id, but DTO requires them.
     }
-    this.currentPage.set(1);
-  }
-
-  sortIcon(field: string): string {
-    if (this.sortBy() !== field) return 'unfold_more';
-    return this.sortDir() === 'asc' ? 'arrow_upward' : 'arrow_downward';
+    this.confirmDeleteId.set(null);
   }
 
   // ─── Utilitaires ─────────────────────────────────
   goToPage(p: number) {
-    if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p);
+    // API is 0-indexed, UI is 1-indexed for page buttons
+    const apiPage = p - 1;
+    if (apiPage >= 0 && apiPage < this.categoryService.totalPage()) {
+      if (this.searchTerm().trim()) {
+        this.categoryService.search({ name: this.searchTerm().trim(), page: apiPage });
+      } else {
+        this.categoryService.loadPage(undefined, apiPage);
+      }
+    }
   }
 
-  clearSearch() { this.searchService.term.set(''); }
+  clearSearch() { 
+    this.searchService.term.set(''); 
+    this.loadData();
+  }
 
   clearFilters() {
     this.searchService.term.set('');
-    this.sortBy.set('name');
-    this.sortDir.set('asc');
-    this.currentPage.set(1);
+    this.categoryService.loadPage(undefined, 0);
   }
 
   exportCSV() {
-    const rows = this.filteredCategories();
-    const header = ['ID', 'Nom', 'Date de création', 'Nombre de produits', 'Nombre d\'utilisateurs'];
-    const data = rows.map(c => [c.id, c.name, c.createdAt, c.productsCount, c.usersCount]);
+    const rows = this.categoryService.categories();
+    const header = ['ID', 'Nom', 'Type', 'Nombre d\'elements', 'Nombre d\'utilisateurs'];
+    const data = rows.map(c => [c.id, c.name, c.categoryType, c.elementsCount, c.usersCount]);
     const csv = [header, ...data].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

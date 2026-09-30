@@ -1,44 +1,57 @@
 <div class="doc-page">
 
-  <!-- En-tête back-office : pas de paragraphe descriptif, direct sur les chiffres -->
+  <!-- En-tête back-office -->
   <div class="doc-header">
     <h2>Documents générés</h2>
 
-    <div class="doc-stats">
-      <div class="doc-stat">
-        <span class="doc-stat-icon doc-stat-icon--total">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-          </svg>
-        </span>
-        <span class="doc-stat-text">
-          <strong>{{ documents().length }}</strong>
-          <small>Total générés</small>
-        </span>
+    @if (documentService.summaryData(); as stats) {
+      <div class="doc-stats">
+        <div class="doc-stat">
+          <span class="doc-stat-icon doc-stat-icon--total">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </span>
+          <span class="doc-stat-text">
+            <strong>{{ stats.totalCount }}</strong>
+            <small>Total générés</small>
+          </span>
+        </div>
+        <div class="doc-stat">
+          <span class="doc-stat-icon doc-stat-icon--pret">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="10" width="18" height="9" rx="1"/><path d="M3 10 12 4l9 6"/>
+            </svg>
+          </span>
+          <span class="doc-stat-text">
+            <strong>{{ stats.pretCount }}</strong>
+            <small>Prêts bancaires</small>
+          </span>
+        </div>
+        <div class="doc-stat">
+          <span class="doc-stat-icon doc-stat-icon--dsf">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            </svg>
+          </span>
+          <span class="doc-stat-text">
+            <strong>{{ stats.fiscalCount }}</strong>
+            <small>Déclarations fiscales</small>
+          </span>
+        </div>
+        <div class="doc-stat">
+          <span class="doc-stat-icon doc-stat-icon--total" style="color: #f59e0b; background-color: rgba(245, 158, 11, 0.1);">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </span>
+          <span class="doc-stat-text">
+            <strong>{{ stats.usersWithDocumentsCount }}</strong>
+            <small>Utilisateurs</small>
+          </span>
+        </div>
       </div>
-      <div class="doc-stat">
-        <span class="doc-stat-icon doc-stat-icon--pret">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="10" width="18" height="9" rx="1"/><path d="M3 10 12 4l9 6"/>
-          </svg>
-        </span>
-        <span class="doc-stat-text">
-          <strong>{{ totalPrets() }}</strong>
-          <small>Prêts bancaires</small>
-        </span>
-      </div>
-      <div class="doc-stat">
-        <span class="doc-stat-icon doc-stat-icon--dsf">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          </svg>
-        </span>
-        <span class="doc-stat-text">
-          <strong>{{ totalDsf() }}</strong>
-          <small>Déclarations fiscales</small>
-        </span>
-      </div>
-    </div>
+    }
   </div>
 
   <div class="doc-toolbar">
@@ -46,12 +59,12 @@
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
       </svg>
-      <input type="text" placeholder="Rechercher un utilisateur, une référence..." [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" />
+      <input type="text" placeholder="Rechercher un utilisateur, une référence..." [ngModel]="recherche()" (ngModelChange)="onSearchChange($event)" />
     </div>
     <div class="doc-filters">
-      <button class="doc-filter" [class.actif]="filtreType() === 'tous'" (click)="filtreType.set('tous')">Tous</button>
-      <button class="doc-filter" [class.actif]="filtreType() === 'pret_bancaire'" (click)="filtreType.set('pret_bancaire')">Prêts</button>
-      <button class="doc-filter" [class.actif]="filtreType() === 'dsf_smt'" (click)="filtreType.set('dsf_smt')">Fiscal</button>
+      <button class="doc-filter" [class.actif]="filtreType() === 'tous'" (click)="onFilterChange('tous')">Tous</button>
+      <button class="doc-filter" [class.actif]="filtreType() === 'DOCUMENT_PRET'" (click)="onFilterChange('DOCUMENT_PRET')">Prêts</button>
+      <button class="doc-filter" [class.actif]="filtreType() === 'DOCUMENT_FISCAL'" (click)="onFilterChange('DOCUMENT_FISCAL')">Fiscal</button>
     </div>
   </div>
 
@@ -63,39 +76,47 @@
           <th>Utilisateur</th>
           <th>Type</th>
           <th>Référence</th>
-          <th class="doc-th-right">Montant</th>
+          <th class="doc-th-right">Montant / CA</th>
           <th>Généré le</th>
+          <th class="text-end">Actions</th>
         </tr>
       </thead>
       <tbody>
-        @for (d of documentsFiltres(); track d.id) {
+        @for (d of documentService.documents(); track d.id) {
           <tr>
             <td>
               <div class="doc-user">
-                <span class="doc-user-avatar">{{ d.utilisateurNom.charAt(0) }}</span>
+                <span class="doc-user-avatar">{{ d.userName.charAt(0) }}</span>
                 <div class="doc-user-text">
-                  <strong>{{ d.utilisateurNom }}</strong>
-                  <span>{{ d.utilisateurCommerce }}</span>
+                  <strong>{{ d.userName }} {{ d.userSubname }}</strong>
+                  <span>{{ d.raisonSociale }}</span>
                 </div>
               </div>
             </td>
             <td>
-              <span class="doc-badge" [class.doc-badge--pret]="d.type === 'pret_bancaire'" [class.doc-badge--dsf]="d.type === 'dsf_smt'">
+              <span class="doc-badge" [class.doc-badge--pret]="d.type === 'DOCUMENT_PRET'" [class.doc-badge--dsf]="d.type === 'DOCUMENT_FISCAL'">
                 {{ labelsType[d.type] }}
               </span>
             </td>
-            <td class="doc-ref">{{ d.reference }}</td>
-            <td class="doc-montant doc-th-right">{{ formaterMontant(d.montant) }}</td>
+            <td class="doc-ref">{{ d.objet || d.nom }}</td>
+            <td class="doc-montant doc-th-right">{{ formaterMontant(d) }}</td>
             <td>
               <div class="doc-date">
-                <span>{{ formaterDate(d.genereLe) }}</span>
-                <small>{{ formaterHeure(d.genereLe) }}</small>
+                <span>{{ formaterDate(d.dateDeGeneration) }}</span>
+                <small>{{ formaterHeure(d.dateDeGeneration) }}</small>
               </div>
+            </td>
+            <td class="text-end">
+              <button class="bk-icon-btn" title="Voir le détail" (click)="viewDocument(d)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="5">
+            <td colspan="6">
               <div class="doc-empty">
                 <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -109,30 +130,70 @@
     </table>
   </div>
 
-  <!-- Vue cartes (mobile) -->
-  <div class="doc-cards">
-    @for (d of documentsFiltres(); track d.id) {
-      <div class="doc-card">
-        <div class="doc-card-top">
-          <div class="doc-user">
-            <span class="doc-user-avatar">{{ d.utilisateurNom.charAt(0) }}</span>
-            <div class="doc-user-text">
-              <strong>{{ d.utilisateurNom }}</strong>
-              <span>{{ d.utilisateurCommerce }}</span>
-            </div>
-          </div>
-          <span class="doc-badge" [class.doc-badge--pret]="d.type === 'pret_bancaire'" [class.doc-badge--dsf]="d.type === 'dsf_smt'">
+  <!-- Pagination -->
+  @if (documentService.totalPage() > 1) {
+    <div class="bk-pagination mt-4 d-flex justify-content-center">
+      <button class="bk-page-btn" [disabled]="documentService.actualIndex() === 0" (click)="goToPage(documentService.actualIndex())">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      @for (p of [].constructor(documentService.totalPage()); track $index) {
+        <button class="bk-page-num" [class.active]="documentService.actualIndex() === $index" (click)="goToPage($index + 1)">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button class="bk-page-btn" [disabled]="documentService.actualIndex() === documentService.totalPage() - 1" (click)="goToPage(documentService.actualIndex() + 2)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  }
+</div>
+
+<!-- ══════════ MODALE DÉTAIL DOCUMENT ══════════ -->
+@if (viewingDoc(); as d) {
+  <div class="bk-modal-backdrop" (click)="closeView()">
+    <div class="bk-modal bk-modal--detail" (click)="$event.stopPropagation()">
+      <div class="bk-detail-header">
+        <div class="bk-detail-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Document #{{ d.id }}</h3>
+          <span class="doc-badge" [class.doc-badge--pret]="d.type === 'DOCUMENT_PRET'" [class.doc-badge--dsf]="d.type === 'DOCUMENT_FISCAL' ">
             {{ labelsType[d.type] }}
           </span>
         </div>
-        <div class="doc-card-row"><span>Référence</span><strong>{{ d.reference }}</strong></div>
-        <div class="doc-card-row"><span>Montant</span><strong>{{ formaterMontant(d.montant) }}</strong></div>
-        <div class="doc-card-row"><span>Généré le</span><strong>{{ formaterDate(d.genereLe) }} · {{ formaterHeure(d.genereLe) }}</strong></div>
+        <button class="bk-icon-btn" (click)="closeView()">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-    } @empty {
-      <div class="doc-empty">
-        <p>Aucun document ne correspond à votre recherche.</p>
+      <div class="bk-detail-body">
+        <div class="bk-detail-row"><span>Nom</span><strong>{{ d.nom || d.objet }}</strong></div>
+        <div class="bk-detail-row"><span>Utilisateur</span><strong>{{ d.userName }} {{ d.userSubname }}</strong></div>
+        <div class="bk-detail-row"><span>Raison Sociale</span><strong>{{ d.raisonSociale }}</strong></div>
+        <div class="bk-detail-row"><span>Généré le</span><strong>{{ formaterDate(d.dateDeGeneration) }} {{ formaterHeure(d.dateDeGeneration) }}</strong></div>
+
+        @if (d.type === 'DOCUMENT_PRET') {
+          <h4 class="mt-4 mb-3 border-bottom pb-2">Détails du Prêt</h4>
+          <div class="bk-detail-row"><span>Banque</span><strong>{{ d.pret?.banque }} (Agence: {{ d.pret?.agence }})</strong></div>
+          <div class="bk-detail-row"><span>Montant Demandé</span><strong>{{ d.pret?.montantDemande?.toLocaleString('fr-FR') }} FCFA</strong></div>
+          <div class="bk-detail-row"><span>Capital Propre</span><strong>{{ d.pret?.capitalPropre?.toLocaleString('fr-FR') }} FCFA</strong></div>
+          <div class="bk-detail-row"><span>Durée (Mois)</span><strong>{{ d.pret?.dureeMois }}</strong></div>
+          <div class="bk-detail-row"><span>Garanties</span><strong>{{ d.pret?.garanties || 'Aucune' }}</strong></div>
+        }
+
+        @if (d.type === 'DOCUMENT_FISCAL') {
+          <h4 class="mt-4 mb-3 border-bottom pb-2">Détails Fiscaux</h4>
+          <div class="bk-detail-row"><span>Régime Fiscal</span><strong>{{ d.fiscal?.regimeFiscal }}</strong></div>
+          <div class="bk-detail-row"><span>Exercice Fiscal</span><strong>{{ d.fiscal?.exerciceFiscal }}</strong></div>
+          <div class="bk-detail-row"><span>Centre d'impôts</span><strong>{{ d.fiscal?.centreImpots }}</strong></div>
+          <div class="bk-detail-row"><span>Chiffre d'Affaires</span><strong>{{ d.fiscal?.chiffreAffairesPeriode?.toLocaleString('fr-FR') }} FCFA</strong></div>
+        }
       </div>
-    }
+      <div class="bk-modal-footer">
+        <button class="btn btn-outline-secondary" (click)="closeView()">Fermer</button>
+      </div>
+    </div>
   </div>
-</div>
+}
