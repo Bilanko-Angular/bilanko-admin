@@ -6,141 +6,161 @@
     <p>Vue d'ensemble de la plateforme Bilanko — {{ today | date:'dd MMMM yyyy' }}</p>
   </div>
 
-  <!-- KPIs -->
-  <section class="kpi-row">
-    @for (kpi of kpis; track kpi.label) {
-      <div class="kpi-card">
-        <div class="kpi-card__icon">
-          <span class="material-icons">{{ kpi.icon }}</span>
-        </div>
-        <div class="kpi-card__content">
-          <div class="kpi-label">{{ kpi.label }}</div>
-          <div class="kpi-value">{{ kpi.value }}</div>
-          <div class="kpi-trend" [class.up]="kpi.trendPositive" [class.down]="!kpi.trendPositive">
-            {{ kpi.trendPositive ? '↑' : '↓' }} {{ kpi.trend }}
-            <span class="muted">vs période précédente</span>
-          </div>
-        </div>
-      </div>
-    }
-  </section>
-
-  <!-- Grille principale -->
-  <section class="dashboard-grid">
-
-    <!-- Colonne gauche -->
-    <div class="left-column">
-
-      <!-- Graphique ligne -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Évolution de l'activité</h2>
-          <div class="period-picker">
-            <div class="date-input-group">
-              <label>Du</label>
-              <input type="date" [(ngModel)]="dateDebut" />
-            </div>
-            <span class="date-separator">au</span>
-            <div class="date-input-group">
-              <label>Au</label>
-              <input type="date" [(ngModel)]="dateFin" />
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-container chart-container--line">
-          <canvas #lineChart></canvas>
-        </div>
-
-        <div class="chart-legend">
-          <div class="legend-item"><span class="legend-box ca"></span> Chiffre d'affaires</div>
-          <div class="legend-item"><span class="legend-box marge"></span> Marge</div>
-          <div class="legend-item"><span class="legend-box charges"></span> Charges</div>
-        </div>
-      </div>
-
-      <!-- Tableau ventes -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Dernières ventes</h2>
-          <a routerLink="/sales" class="link">Voir toutes les ventes →</a>
-        </div>
-
-        <table class="bk-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Client</th>
-              <th class="num">Produits</th>
-              <th class="num">Montant</th>
-              <th class="num">Marge</th>
-            </tr>
-          </thead>
-          <tbody>
-  @for (sale of recentSales; track sale.id) {
-    <tr>
-      <td data-label="Date">{{ sale.date }}</td>
-      <td data-label="Client"><span class="client-link">{{ sale.client }}</span></td>
-      <td data-label="Produits" class="num">{{ sale.items }}</td>
-      <td data-label="Montant" class="num bilanko-amount">{{ sale.total | currency:'XAF':'symbol':'1.0-0' }}</td>
-      <td data-label="Marge" class="num bilanko-amount bilanko-amount--positive">{{ sale.margin | currency:'XAF':'symbol':'1.0-0' }}</td>
-    </tr>
-  }
-</tbody>
-        </table>
-      </div>
+  <!-- État : Chargement -->
+  @if (store.loading()) {
+    <div class="dashboard-loading">
+      <div class="loading-spinner"></div>
+      <p>Chargement des données…</p>
     </div>
+  }
 
-    <!-- Colonne droite -->
-    <div class="right-column">
+  <!-- État : Erreur -->
+  @if (store.error()) {
+    <div class="dashboard-error">
+      <span class="material-icons">error_outline</span>
+      <p>{{ store.error() }}</p>
+    </div>
+  }
 
-      <!-- Alertes stock -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Alertes de stock</h2>
-          <a routerLink="/products" class="link">Tout voir →</a>
-        </div>
-        @for (alert of stockAlerts; track alert.name) {
-          <div class="alert-row">
-            <span class="alert-dot" [class.low]="alert.level === 'low'" [class.mid]="alert.level === 'mid'"></span>
-            <div class="alert-text">
-              <div class="name">{{ alert.name }}</div>
-              <div class="sub">{{ alert.status }}</div>
-            </div>
-            <div class="alert-qty">{{ alert.qty }} restants</div>
+  <!-- Contenu principal (affiché dès que les données sont disponibles) -->
+  @if (store.summary()) {
+
+    <!-- KPIs -->
+    <section class="kpi-row">
+      @for (kpi of kpis; track kpi.label) {
+        <div class="kpi-card">
+          <div class="kpi-card__icon">
+            <span class="material-icons">{{ kpi.icon }}</span>
           </div>
-        }
+          <div class="kpi-card__content">
+            <div class="kpi-label">{{ kpi.label }}</div>
+            <div class="kpi-value">{{ kpi.value }}</div>
+            <div class="kpi-trend" [class.up]="kpi.trendPositive" [class.down]="!kpi.trendPositive">
+              {{ kpi.trendPositive ? '↑' : '↓' }} {{ kpi.trend }}
+              <span class="muted">vs période précédente</span>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Grille principale -->
+    <section class="dashboard-grid">
+
+      <!-- Colonne gauche -->
+      <div class="left-column">
+
+        <!-- Graphique ligne -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Évolution de l'activité</h2>
+            <div class="period-picker">
+              <div class="date-input-group">
+                <label>Du</label>
+                <input type="date" [(ngModel)]="dateDebut" />
+              </div>
+              <span class="date-separator">au</span>
+              <div class="date-input-group">
+                <label>Au</label>
+                <input type="date" [(ngModel)]="dateFin" />
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-container chart-container--line">
+            <canvas #lineChart></canvas>
+          </div>
+
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-box ca"></span> Chiffre d'affaires</div>
+            <div class="legend-item"><span class="legend-box marge"></span> Marge</div>
+            <div class="legend-item"><span class="legend-box charges"></span> Charges</div>
+          </div>
+        </div>
+
+        <!-- Tableau ventes -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Dernières ventes</h2>
+            <a routerLink="/sales" class="link">Voir toutes les ventes →</a>
+          </div>
+
+          <table class="bk-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th class="num">Produits</th>
+                <th class="num">Montant</th>
+                <th class="num">Marge</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sale of recentSales; track sale.id) {
+                <tr>
+                  <td data-label="Date">{{ sale.date }}</td>
+                  <td data-label="Client"><span class="client-link">{{ sale.client }}</span></td>
+                  <td data-label="Produits" class="num">{{ sale.items }}</td>
+                  <td data-label="Montant" class="num bilanko-amount">{{ sale.total | currency:'XAF':'symbol':'1.0-0' }}</td>
+                  <td data-label="Marge" class="num bilanko-amount bilanko-amount--positive">{{ sale.margin | currency:'XAF':'symbol':'1.0-0' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Donut fournisseurs -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Répartition des charges</h2>
-          <a routerLink="/charges" class="link">Détails →</a>
-        </div>
+      <!-- Colonne droite -->
+      <div class="right-column">
 
-        <div class="chart-container chart-container--donut">
-          <canvas #donutChart></canvas>
-          <div class="donut-center-info">
-            <div class="donut-center-amount">{{ totalCharges | currency:'XAF':'symbol':'1.0-0' }}</div>
-            <div class="donut-center-badge">Fournisseurs</div>
+        <!-- Alertes stock -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Alertes de stock</h2>
+            <a routerLink="/products" class="link">Tout voir →</a>
           </div>
-        </div>
-
-        <div class="supplier-charges-list">
-          @for (f of suppliers; track f.name) {
-            <div class="supplier-item">
-              <div class="supplier-rect" [style.background-color]="f.color"></div>
-              <div class="supplier-info">
-                <div class="supplier-name">{{ f.name }}</div>
-                <div class="supplier-desc">{{ f.desc }}</div>
+          @for (alert of stockAlerts; track alert.name) {
+            <div class="alert-row">
+              <span class="alert-dot" [class.low]="alert.level === 'low'" [class.mid]="alert.level === 'mid'"></span>
+              <div class="alert-text">
+                <div class="name">{{ alert.name }}</div>
+                <div class="sub">{{ alert.status }}</div>
               </div>
-              <div class="supplier-amount">{{ f.amount | currency:'XAF':'symbol':'1.0-0' }}</div>
+              <div class="alert-qty">{{ alert.qty }} restants</div>
             </div>
           }
         </div>
-      </div>
-    </div>
 
-  </section>
+        <!-- Donut fournisseurs -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Répartition des charges</h2>
+            <a routerLink="/charges" class="link">Détails →</a>
+          </div>
+
+          <div class="chart-container chart-container--donut">
+            <canvas #donutChart></canvas>
+            <div class="donut-center-info">
+              <div class="donut-center-amount">{{ totalCharges | currency:'XAF':'symbol':'1.0-0' }}</div>
+              <div class="donut-center-badge">Fournisseurs</div>
+            </div>
+          </div>
+
+          <div class="supplier-charges-list">
+            @for (f of suppliers; track f.name) {
+              <div class="supplier-item">
+                <div class="supplier-rect" [style.background-color]="f.color"></div>
+                <div class="supplier-info">
+                  <div class="supplier-name">{{ f.name }}</div>
+                  <div class="supplier-desc">{{ f.desc }}</div>
+                </div>
+                <div class="supplier-amount">{{ f.amount | currency:'XAF':'symbol':'1.0-0' }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+    </section>
+  }
 </div>
