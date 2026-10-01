@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { SaleStoreService } from '../../service/store/vente/sale-store.service';
-import { SearchService } from '../../services/search.service';
+import { SearchService } from '../../service/app/search/search.service';
 import { AdminSale } from '../../models/sale/admin-sale';
 import { SaleItemRequestDTO } from '../../models/DTO/sale/SaleDTOs';
 

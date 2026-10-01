@@ -5,7 +5,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
-import { DashboardService, Kpi, RecentUser, StockAlert, SupplierShare } from '../../services/dashboard.service';
+import { DashboardStoreService, Kpi, RecentUser, StockAlert, SupplierShare } from '../../service/store/dashboard/dashboard-store.service';
 
 Chart.register(...registerables);
 
@@ -17,7 +17,7 @@ Chart.register(...registerables);
   styleUrl: './dashboard.css',
 })
 export class Dashboard implements AfterViewInit, OnDestroy {
-  private dashboardService = inject(DashboardService);
+  private dashboardService = inject(DashboardStoreService);
 
   @ViewChild('lineChart')    lineChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('donutChart')   donutChartRef!: ElementRef<HTMLCanvasElement>;

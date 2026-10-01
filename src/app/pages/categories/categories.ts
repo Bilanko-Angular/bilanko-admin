@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { CategoryStoreService } from '../../service/store/category/category-store.service';
-import { SearchService } from '../../services/search.service';
+import { SearchService } from '../../service/app/search/search.service';
 import { AdminCategory } from '../../models/category/admin-category';
 import { CategoryType } from '../../models/DTO/category/CategoryDTOs';
 

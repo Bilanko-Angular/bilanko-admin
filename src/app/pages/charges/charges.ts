@@ -5,7 +5,7 @@ import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { ChargeStoreService } from '../../service/store/charges/charge-store.service';
 import { UserStoreService } from '../../service/store/user/user-store.service';
-import { SearchService } from '../../services/search.service';
+import { SearchService } from '../../service/app/search/search.service';
 import { AdminCharge } from '../../models/charge/adminCharge';
 import { AdminChargeSummaryDTO } from '../../models/DTO/charge/AdminChargeSummaryDTO';
 import { AdminChargeCreateRequest } from '../../models/DTO/charge/AdminChargeCreateRequest';

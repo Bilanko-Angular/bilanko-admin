@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthStoreService } from '../../service/store/auth/auth-store.service';
 import { ThemeService } from '../../service/app/theme/theme.service';
-import { SearchService } from '../../services/search.service';
+import { SearchService } from '../../service/app/search/search.service';
 import { NotificationsBell } from '../../components/notifications-bell/notifications-bell';
 
 @Component({

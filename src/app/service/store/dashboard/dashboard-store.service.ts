@@ -29,7 +29,7 @@ export interface SupplierShare {
 }
 
 @Injectable({ providedIn: 'root' })
-export class DashboardService {
+export class DashboardStoreService {
 
   getKpis(): Kpi[] {
     return [

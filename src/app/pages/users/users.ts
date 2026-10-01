@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angu
 import { CommonModule } from '@angular/common';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { UserManagementStoreService } from '../../service/store/user-management/user-management-store.service';
-import { SearchService } from '../../services/search.service';
+import { SearchService } from '../../service/app/search/search.service';
 import { AdminUser } from '../../models/user-management/admin-user';
 import { UserRole } from '../../models/type/user-role';
 import { TimeAgoPipe } from '../../pipe/time-ago.pipe-pipe';
