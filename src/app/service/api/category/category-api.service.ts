@@ -22,7 +22,7 @@ export interface SearchCategoryParams {
   providedIn: 'root',
 })
 export class CategoryApiService {
-  private readonly basePath = environment.baseApiUrl + '/api/categories';
+  private readonly basePath = environment.baseApiUrl + '/categories';
 
   async getSummary(): Promise<CategorySummaryDTO> {
     const response = await apiClient.get<CategorySummaryDTO>(`${this.basePath}/summary`);
