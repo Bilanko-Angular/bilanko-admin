@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, ElementRef, viewChild, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessagingService } from '../../services/messaging.service';
+import { SupportMessagingStoreService } from '../../service/store/support/support-messaging-store.service';
 import { StatutConversation } from '../../models/messaging';
 
 @Component({
@@ -11,10 +11,11 @@ import { StatutConversation } from '../../models/messaging';
   styleUrl: './messaging.css',
 })
 export class Messaging {
-  private readonly messagingService = inject(MessagingService);
+  private readonly messagingStore = inject(SupportMessagingStoreService);
   private readonly zoneMessages = viewChild<ElementRef<HTMLDivElement>>('zoneMessages');
 
-  readonly conversations = this.messagingService.conversations;
+  readonly conversations = this.messagingStore.conversations;
+  readonly isLoading = this.messagingStore.isLoading;
   readonly recherche = signal('');
   readonly filtreStatut = signal<'toutes' | StatutConversation>('toutes');
   readonly conversationActiveId = signal<string | null>(null);
@@ -32,23 +33,24 @@ export class Messaging {
           !terme ||
           c.utilisateur.nom.toLowerCase().includes(terme) ||
           c.utilisateur.commerce.toLowerCase().includes(terme) ||
-          c.sujet.toLowerCase().includes(terme)
+          c.sujet.toLowerCase().includes(terme),
       )
       .sort((a, b) => b.dernierMessageLe.localeCompare(a.dernierMessageLe));
   });
 
-  readonly conversationActive = computed(() =>
-    this.conversations().find((c) => c.id === this.conversationActiveId()) ?? null
+  readonly conversationActive = computed(
+    () => this.conversations().find((c) => c.id === this.conversationActiveId()) ?? null,
   );
 
   readonly messagesActifs = computed(() => {
     const id = this.conversationActiveId();
-    return id ? this.messagingService.messagesDe(id)() : [];
+    return id ? this.messagingStore.messagesDe(id)() : [];
   });
 
   readonly totalNonLus = computed(() => this.conversations().reduce((s, c) => s + c.nonLus, 0));
 
   constructor() {
+    void this.messagingStore.loadPage();
     effect(() => {
       this.messagesActifs();
       queueMicrotask(() => {
@@ -58,10 +60,14 @@ export class Messaging {
     });
   }
 
-  ouvrirConversation(id: string) {
+  async ouvrirConversation(id: string) {
     this.conversationActiveId.set(id);
     this.vueMobile.set('discussion');
-    this.messagingService.marquerCommeLu(id);
+    this.messagingStore.markAsRead(id);
+    await Promise.all([
+      this.messagingStore.loadConversation(id),
+      this.messagingStore.loadMessages(id),
+    ]);
   }
 
   retourALaListe() {
@@ -72,12 +78,11 @@ export class Messaging {
     this.panneauContactOuvert.update((v) => !v);
   }
 
-  envoyer() {
+  async envoyer() {
     const texte = this.brouillon().trim();
     const id = this.conversationActiveId();
-    if (!texte || !id) return;
-    this.messagingService.envoyerMessage(id, texte);
-    this.brouillon.set('');
+    if (!texte || !id || !this.conversationActive()?.canWrite) return;
+    if (await this.messagingStore.sendMessage(id, texte)) this.brouillon.set('');
   }
 
   gererTouche(evenement: KeyboardEvent) {
