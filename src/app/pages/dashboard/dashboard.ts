@@ -45,7 +45,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.store.loadSummary();
+    this.store.startPolling();
   }
 
   ngAfterViewInit() {
@@ -57,6 +57,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.store.stopPolling();
     this.lineChart?.destroy();
     this.donutChart?.destroy();
   }
