@@ -1,4 +1,4 @@
-import { AdminProductCategoryInfo } from './DTO/product/AdminProductResponseDTO';
+import {AdminProductCategoryInfo} from '../DTO/product/AdminProductResponseDTO';
 
 export interface AdminProduct {
   id: number;

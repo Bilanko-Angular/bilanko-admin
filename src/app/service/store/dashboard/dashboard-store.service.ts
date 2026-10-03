@@ -1,5 +1,6 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { DashboardApiService, DashboardSummaryDTO } from '../api/dashboard/dashboard-api.service';
+import {DashboardApiService, DashboardSummaryDTO} from "../../api/dashboard/dashboard-api.service";
+
 
 @Injectable({ providedIn: 'root' })
 export class DashboardStoreService {
@@ -13,7 +14,7 @@ export class DashboardStoreService {
   loadSummary() {
     this.loading.set(true);
     this.error.set(null);
-    
+
     this.api.getSummary().subscribe({
       next: (data) => {
         this.summary.set(data);

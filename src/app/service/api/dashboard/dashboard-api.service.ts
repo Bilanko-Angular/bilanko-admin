@@ -1,7 +1,6 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
+import {apiClient} from '../../../core/axios/axios.config';
 
 export interface KpiDTO {
   label: string;
@@ -60,10 +59,11 @@ export interface DashboardSummaryDTO {
   providedIn: 'root',
 })
 export class DashboardApiService {
-  private http = inject(HttpClient);
-  private apiUrl = `${environment.baseApiUrl}/dashboard`;
 
-  getSummary(): Observable<DashboardSummaryDTO> {
-    return this.http.get<DashboardSummaryDTO>(`${this.apiUrl}/summary`);
+  private apiUrl = `${environment.baseApiUrl}/admin/dashboard`;
+
+  async getSummary(): Promise<DashboardSummaryDTO> {
+    const response= await apiClient.get<DashboardSummaryDTO>(`${this.apiUrl}/summary`);
+    return response.data
   }
 }
