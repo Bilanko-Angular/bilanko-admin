@@ -1,5 +1,4 @@
 <div class="msg-app">
-
   <!-- ============================================================
        COLONNE 1 — Liste des conversations
        ============================================================ -->
@@ -15,17 +14,55 @@
     </div>
 
     <div class="msg-search">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <line x1="21" y1="21" x2="16.5" y2="16.5" />
       </svg>
-      <input type="text" placeholder="Rechercher un utilisateur, un sujet..." [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" />
+      <input
+        type="text"
+        placeholder="Rechercher un utilisateur, un sujet..."
+        [ngModel]="recherche()"
+        (ngModelChange)="recherche.set($event)"
+      />
     </div>
 
     <div class="msg-filters">
-      <button class="msg-filter" [class.actif]="filtreStatut() === 'toutes'" (click)="filtreStatut.set('toutes')">Toutes</button>
-      <button class="msg-filter" [class.actif]="filtreStatut() === 'ouverte'" (click)="filtreStatut.set('ouverte')">Ouvertes</button>
-      <button class="msg-filter" [class.actif]="filtreStatut() === 'en_attente'" (click)="filtreStatut.set('en_attente')">En attente</button>
-      <button class="msg-filter" [class.actif]="filtreStatut() === 'resolue'" (click)="filtreStatut.set('resolue')">Résolues</button>
+      <button
+        class="msg-filter"
+        [class.actif]="filtreStatut() === 'toutes'"
+        (click)="filtreStatut.set('toutes')"
+      >
+        Toutes
+      </button>
+      <button
+        class="msg-filter"
+        [class.actif]="filtreStatut() === 'ouverte'"
+        (click)="filtreStatut.set('ouverte')"
+      >
+        Ouvertes
+      </button>
+      <button
+        class="msg-filter"
+        [class.actif]="filtreStatut() === 'en_attente'"
+        (click)="filtreStatut.set('en_attente')"
+      >
+        En attente
+      </button>
+      <button
+        class="msg-filter"
+        [class.actif]="filtreStatut() === 'resolue'"
+        (click)="filtreStatut.set('resolue')"
+      >
+        Résolues
+      </button>
     </div>
 
     <div class="msg-conv-list">
@@ -37,7 +74,9 @@
           [class.non-lu]="conv.nonLus > 0"
           (click)="ouvrirConversation(conv.id)"
         >
-          <span class="msg-avatar" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
+          <span class="msg-avatar" [style.background]="conv.utilisateur.avatarCouleur">{{
+            initiales(conv.utilisateur.nom)
+          }}</span>
           <span class="msg-conv-body">
             <span class="msg-conv-top">
               <strong>{{ conv.utilisateur.nom }}</strong>
@@ -52,8 +91,18 @@
         </button>
       } @empty {
         <div class="msg-empty">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.5" y2="16.5" />
           </svg>
           <p>Aucune conversation ne correspond à votre recherche.</p>
         </div>
@@ -68,11 +117,24 @@
     @if (conversationActive(); as conv) {
       <div class="msg-thread-header">
         <button class="msg-back" type="button" (click)="retourALaListe()" aria-label="Retour">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <span class="msg-avatar msg-avatar--sm" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
+        <span
+          class="msg-avatar msg-avatar--sm"
+          [style.background]="conv.utilisateur.avatarCouleur"
+          >{{ initiales(conv.utilisateur.nom) }}</span
+        >
         <div class="msg-thread-identity">
           <strong>{{ conv.utilisateur.nom }}</strong>
           <span>{{ conv.utilisateur.commerce }} · {{ conv.sujet }}</span>
@@ -80,14 +142,35 @@
         <span class="msg-status msg-status--{{ conv.statut }}">
           <span class="msg-status-dot"></span>
           @switch (conv.statut) {
-            @case ('ouverte') { Ouverte }
-            @case ('en_attente') { En attente }
-            @case ('resolue') { Résolue }
+            @case ('ouverte') {
+              Ouverte
+            }
+            @case ('en_attente') {
+              En attente
+            }
+            @case ('resolue') {
+              Résolue
+            }
           }
         </span>
-        <button class="msg-toggle-contact" type="button" (click)="toggleContact()" aria-label="Infos utilisateur">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.6 3.1-6.3 7-6.3s7 2.7 7 6.3"/>
+        <button
+          class="msg-toggle-contact"
+          type="button"
+          (click)="toggleContact()"
+          aria-label="Infos utilisateur"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="17"
+            height="17"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="8" r="3.2" />
+            <path d="M5 20c0-3.6 3.1-6.3 7-6.3s7 2.7 7 6.3" />
           </svg>
         </button>
       </div>
@@ -97,7 +180,11 @@
         @for (m of messagesActifs(); track m.id) {
           <div class="msg-bubble-row" [class.msg-bubble-row--admin]="m.auteur === 'admin'">
             @if (m.auteur === 'utilisateur') {
-              <span class="msg-avatar msg-avatar--xs" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
+              <span
+                class="msg-avatar msg-avatar--xs"
+                [style.background]="conv.utilisateur.avatarCouleur"
+                >{{ initiales(conv.utilisateur.nom) }}</span
+              >
             }
             <div class="msg-bubble" [class.msg-bubble--admin]="m.auteur === 'admin'">
               <p>{{ m.contenu }}</p>
@@ -114,18 +201,47 @@
           [ngModel]="brouillon()"
           (ngModelChange)="brouillon.set($event)"
           (keydown)="gererTouche($event)"
+          [disabled]="!conv.canWrite"
         ></textarea>
-        <button class="msg-send" type="button" [disabled]="!brouillon().trim()" (click)="envoyer()" aria-label="Envoyer">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        <button
+          class="msg-send"
+          type="button"
+          [disabled]="!conv.canWrite || !brouillon().trim()"
+          (click)="envoyer()"
+          aria-label="Envoyer"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
         </button>
+        @if (!conv.canWrite) {
+          <small>Cette conversation ne peut pas recevoir de réponse actuellement.</small>
+        }
       </div>
     } @else {
       <div class="msg-thread-placeholder">
         <div class="msg-thread-placeholder-icon">
-          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="30"
+            height="30"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
         <p>Sélectionnez une conversation pour commencer</p>
@@ -141,15 +257,33 @@
     <div class="msg-contact-pane" [class.msg-contact-pane--ouvert]="panneauContactOuvert()">
       <div class="msg-contact-header">
         <span>Informations du compte</span>
-        <button type="button" class="msg-contact-close" (click)="toggleContact()" aria-label="Fermer">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        <button
+          type="button"
+          class="msg-contact-close"
+          (click)="toggleContact()"
+          aria-label="Fermer"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
 
       <div class="msg-contact-profile">
-        <span class="msg-avatar msg-avatar--lg" [style.background]="conv.utilisateur.avatarCouleur">{{ initiales(conv.utilisateur.nom) }}</span>
+        <span
+          class="msg-avatar msg-avatar--lg"
+          [style.background]="conv.utilisateur.avatarCouleur"
+          >{{ initiales(conv.utilisateur.nom) }}</span
+        >
         <strong>{{ conv.utilisateur.nom }}</strong>
         <span class="msg-contact-commerce">{{ conv.utilisateur.commerce }}</span>
       </div>

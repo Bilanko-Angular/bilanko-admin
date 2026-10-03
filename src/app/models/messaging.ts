@@ -28,4 +28,6 @@ export interface Conversation {
   dernierMessage: string;
   dernierMessageLe: string; // ISO
   nonLus: number;
+  canWrite?: boolean;
+  transferPending?: boolean;
 }
