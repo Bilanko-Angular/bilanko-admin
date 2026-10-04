@@ -18,6 +18,7 @@ export interface Message {
   contenu: string;
   envoyeLe: string; // ISO
   lu: boolean;
+  senderName?: string;
 }
 
 export interface Conversation {
@@ -30,4 +31,6 @@ export interface Conversation {
   nonLus: number;
   canWrite?: boolean;
   transferPending?: boolean;
+  currentAdminId?: string | null;
+  currentAdminName?: string | null;
 }

@@ -3,5 +3,5 @@ export interface NotificationItem {
   title: string;
   detail: string;
   time: string;
-  type: 'stock' | 'vente' | 'systeme';
+  type: 'stock' | 'vente' | 'systeme' | 'support';
 }

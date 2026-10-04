@@ -1,10 +1,8 @@
-import { Injectable, signal, computed, inject, OnDestroy } from '@angular/core';
-import {NotificationApiService} from '../../api/notification/notification-api.service';
-import {NotificationItem} from '../../../models/notification/notificationItem';
-import {NotificationMapper} from '../../../mapper/NotificationMapper';
+import { Injectable, signal, inject, OnDestroy } from '@angular/core';
+import { NotificationApiService } from '../../api/notification/notification-api.service';
+import { MappedNotification, NotificationMapper } from '../../../mapper/NotificationMapper';
 
-
-export type ExtendedNotificationItem = NotificationItem & { read: boolean, referenceId: number | null, originalType: string };
+export type ExtendedNotificationItem = MappedNotification;
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +22,7 @@ export class NotificationsStoreService implements OnDestroy {
   private eventSource: EventSource | null = null;
 
   constructor() {
-    this.init().then(r => {});
+    void this.init();
   }
 
   private async init() {
@@ -35,12 +33,12 @@ export class NotificationsStoreService implements OnDestroy {
   private async loadInitialData() {
     try {
       const pageData = await this.apiService.getNotifications(0, 10);
-      const mapped = pageData.content.map(n => NotificationMapper.toClient(n));
+      const mapped = pageData.content.map((n) => NotificationMapper.toClient(n));
       this._notifications.set(mapped);
       this._hasMore.set(pageData.hasMore);
       this._page.set(pageData.page);
 
-      const count = await this.apiService.getUnreadCount();
+      const count = pageData.unreadCount ?? (await this.apiService.getUnreadCount());
       this._unreadCount.set(count);
     } catch (error) {
       console.error('Failed to load notifications', error);
@@ -52,9 +50,9 @@ export class NotificationsStoreService implements OnDestroy {
     try {
       const nextPage = this._page() + 1;
       const pageData = await this.apiService.getNotifications(nextPage, 10);
-      const mapped = pageData.content.map(n => NotificationMapper.toClient(n));
+      const mapped = pageData.content.map((n) => NotificationMapper.toClient(n));
 
-      this._notifications.update(prev => [...prev, ...mapped]);
+      this._notifications.update((prev) => [...prev, ...mapped]);
       this._hasMore.set(pageData.hasMore);
       this._page.set(pageData.page);
     } catch (error) {
@@ -78,9 +76,22 @@ export class NotificationsStoreService implements OnDestroy {
       try {
         const data = JSON.parse(event.data);
         const newNotif = NotificationMapper.toClient(data);
-        this._notifications.update(prev => [newNotif, ...prev]);
+        this._notifications.update((prev) => {
+          if (prev.some((n) => n.id === newNotif.id)) return prev;
+          return [newNotif, ...prev];
+        });
       } catch (e) {
         console.error('Failed to parse new notification', e);
+      }
+    });
+
+    this.eventSource.addEventListener('notification-deleted', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data) as { id: number };
+        const id = String(data.id);
+        this._notifications.update((prev) => prev.filter((n) => n.id !== id));
+      } catch (e) {
+        console.error('Failed to parse deleted notification', e);
       }
     });
 
@@ -97,18 +108,19 @@ export class NotificationsStoreService implements OnDestroy {
 
     this.eventSource.onerror = (error) => {
       console.error('SSE Error', error);
-      // Optional: Handle reconnection logic if needed. EventSource typically reconnects automatically.
     };
   }
 
   async markAsRead(id: string) {
+    const target = this._notifications().find((n) => n.id === id);
+    if (!target || target.read) return;
+
     try {
       await this.apiService.markAsRead(Number(id));
-      this._notifications.update(prev =>
-        prev.map(n => n.id === id ? { ...n, read: true } : n)
+      this._notifications.update((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
-      // Note: The unread-count event will be fired by backend, so we don't strictly need to manually decrement,
-      // but doing it here could make it feel more responsive if SSE is slow.
+      this._unreadCount.update((count) => Math.max(0, count - 1));
     } catch (error) {
       console.error('Failed to mark notification as read', error);
     }
@@ -117,13 +129,15 @@ export class NotificationsStoreService implements OnDestroy {
   async markAllAsRead() {
     try {
       await this.apiService.markAllAsRead();
-      this._notifications.update(prev =>
-        prev.map(n => ({ ...n, read: true }))
-      );
+      this._notifications.update((prev) => prev.map((n) => ({ ...n, read: true })));
       this._unreadCount.set(0);
     } catch (error) {
       console.error('Failed to mark all notifications as read', error);
     }
+  }
+
+  removeLocally(id: string) {
+    this._notifications.update((prev) => prev.filter((n) => n.id !== id));
   }
 
   ngOnDestroy() {

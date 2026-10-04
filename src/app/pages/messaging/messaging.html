@@ -153,6 +153,9 @@
             }
           }
         </span>
+        @if (conv.transferPending) {
+          <span class="msg-status msg-status--en_attente">Transfert en cours</span>
+        }
         <button
           class="msg-toggle-contact"
           type="button"
@@ -309,7 +312,40 @@
           <span>Client depuis</span>
           <strong>{{ conv.utilisateur.dateInscription }}</strong>
         </div>
+        @if (conv.currentAdminName) {
+          <div class="msg-contact-field">
+            <span>Admin en charge</span>
+            <strong>{{ conv.currentAdminName }}</strong>
+          </div>
+        }
       </div>
+
+      @if (conv.canWrite) {
+        <div class="msg-transfer">
+          <h3>Transférer la conversation</h3>
+          <p>Envoyez une demande à un autre admin via son email.</p>
+          <input
+            type="email"
+            placeholder="email@admin.com"
+            [ngModel]="emailTransfert()"
+            (ngModelChange)="emailTransfert.set($event)"
+            [disabled]="conv.transferPending || transfertEnCours()"
+          />
+          <button
+            type="button"
+            [disabled]="conv.transferPending || transfertEnCours() || !emailTransfert().trim()"
+            (click)="transferer()"
+          >
+            {{ transfertEnCours() ? 'Envoi…' : 'Demander le transfert' }}
+          </button>
+          @if (conv.transferPending) {
+            <small>Un transfert est déjà en attente.</small>
+          }
+          @if (transfertMessage()) {
+            <small>{{ transfertMessage() }}</small>
+          }
+        </div>
+      }
     </div>
   }
 </div>

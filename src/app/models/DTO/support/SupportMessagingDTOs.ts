@@ -1,6 +1,6 @@
 import { Page } from '../template/page';
 
-export type ConversationStatus = 'OPEN' | 'PENDING' | 'RESOLVED' | string;
+export type ConversationStatus = 'WAITING_FOR_ADMIN' | 'ACTIVE' | string;
 
 export interface SupportConversationDTO {
   id: number;

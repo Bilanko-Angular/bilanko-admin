@@ -17,8 +17,11 @@ export class NotificationApiService {
   }
 
   async getUnreadCount(): Promise<number> {
-    const response = await apiClient.get<number>(`${this.basePath}/unread-count`);
-    return response.data;
+    const response = await apiClient.get<{ count: number } | number>(
+      `${this.basePath}/unread-count`,
+    );
+    const data = response.data;
+    return typeof data === 'number' ? data : data.count;
   }
 
   async markAsRead(id: number): Promise<void> {

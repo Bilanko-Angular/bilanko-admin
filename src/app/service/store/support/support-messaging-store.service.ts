@@ -28,7 +28,9 @@ export class SupportMessagingStoreService {
     this._error.set(null);
     try {
       const response = await this.api.getConversations(page, size);
-      this._conversations.set(response.content.map(SupportMessagingMapper.conversationFromDto));
+      this._conversations.set(
+        response.content.map((dto) => SupportMessagingMapper.conversationFromDto(dto)),
+      );
       this._actualIndex.set(page);
       this._totalPage.set(response.totalPages);
     } catch (error) {
@@ -44,17 +46,17 @@ export class SupportMessagingStoreService {
     return computed(() => this._messages()[conversationId] ?? []);
   }
 
-  async loadConversation(id: string): Promise<void> {
+  async loadConversation(id: string): Promise<Conversation | null> {
     try {
       const conversation = SupportMessagingMapper.conversationFromDto(
         await this.api.getConversation(Number(id)),
       );
-      this._conversations.update((list) =>
-        list.map((item) => (item.id === id ? { ...item, ...conversation } : item)),
-      );
+      this.upsertConversation(conversation);
+      return conversation;
     } catch (error) {
       console.error('[SupportMessagingStore] load conversation error', error);
       this._error.set('Erreur lors du chargement de la conversation');
+      return null;
     }
   }
 
@@ -84,7 +86,21 @@ export class SupportMessagingStoreService {
     try {
       const response = await this.api.sendMessage(Number(id), { content: content.trim() });
       const message = SupportMessagingMapper.messageFromDto(response, id);
-      this._messages.update((current) => ({ ...current, [id]: [...(current[id] ?? []), message] }));
+      this._messages.update((current) => ({
+        ...current,
+        [id]: [...(current[id] ?? []), message],
+      }));
+      this._conversations.update((list) =>
+        list.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                dernierMessage: message.contenu,
+                dernierMessageLe: message.envoyeLe,
+              }
+            : item,
+        ),
+      );
       return true;
     } catch (error) {
       console.error('[SupportMessagingStore] send message error', error);
@@ -93,28 +109,33 @@ export class SupportMessagingStoreService {
     }
   }
 
-  async claim(token: string): Promise<boolean> {
+  async claim(token: string): Promise<Conversation | null> {
+    this._error.set(null);
     try {
       const conversation = SupportMessagingMapper.conversationFromDto(await this.api.claim(token));
-      this._conversations.update((list) =>
-        list.map((item) => (item.id === conversation.id ? conversation : item)),
-      );
-      return true;
-    } catch (error) {
+      this.upsertConversation(conversation);
+      return conversation;
+    } catch (error: unknown) {
       console.error('[SupportMessagingStore] claim error', error);
-      this._error.set('Erreur lors de la prise en charge');
-      return false;
+      const status = this.extractHttpStatus(error);
+      if (status === 409 || status === 410) {
+        this._error.set("Ce lien de prise en main n'est plus valide");
+      } else if (status === 403) {
+        this._error.set('Ce transfert ne vous est pas destiné');
+      } else {
+        this._error.set('Erreur lors de la prise en charge');
+      }
+      return null;
     }
   }
 
   async transfer(id: string, adminEmail: string): Promise<boolean> {
+    this._error.set(null);
     try {
       const conversation = SupportMessagingMapper.conversationFromDto(
-        await this.api.transfer(Number(id), { adminEmail }),
+        await this.api.transfer(Number(id), { adminEmail: adminEmail.trim() }),
       );
-      this._conversations.update((list) =>
-        list.map((item) => (item.id === id ? conversation : item)),
-      );
+      this.upsertConversation(conversation);
       return true;
     } catch (error) {
       console.error('[SupportMessagingStore] transfer error', error);
@@ -129,9 +150,29 @@ export class SupportMessagingStoreService {
     );
   }
 
+  private upsertConversation(conversation: Conversation): void {
+    this._conversations.update((list) => {
+      const index = list.findIndex((item) => item.id === conversation.id);
+      if (index === -1) {
+        return [conversation, ...list];
+      }
+      const next = [...list];
+      next[index] = { ...next[index], ...conversation };
+      return next;
+    });
+  }
+
   private mapMessages(page: Page<SupportMessageDTO>, conversationId: string): Message[] {
     return page.content.map((message) =>
       SupportMessagingMapper.messageFromDto(message, conversationId),
     );
+  }
+
+  private extractHttpStatus(error: unknown): number | null {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const response = (error as { response?: { status?: number } }).response;
+      return response?.status ?? null;
+    }
+    return null;
   }
 }

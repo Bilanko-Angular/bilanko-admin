@@ -18,13 +18,17 @@ export class SupportMessagingMapper {
         dateInscription: dto.createdAt.slice(0, 10),
         avatarCouleur: '#2E5F45',
       },
-      statut: this.statusFromDto(dto.status),
+      statut: SupportMessagingMapper.statusFromDto(dto.status),
       sujet: 'Assistance',
       dernierMessage: '',
       dernierMessageLe: dto.updatedAt,
       nonLus: 0,
       canWrite: dto.canWrite,
       transferPending: dto.transferPending,
+      currentAdminId: dto.currentAdminId != null ? String(dto.currentAdminId) : null,
+      currentAdminName: [dto.currentAdminName, dto.currentAdminSubname]
+        .filter(Boolean)
+        .join(' ') || null,
     };
   }
 
@@ -38,17 +42,25 @@ export class SupportMessagingMapper {
       contenu: dto.content,
       envoyeLe: dto.createdAt,
       lu: true,
+      senderName: [dto.senderName, dto.senderSubname].filter(Boolean).join(' '),
     };
   }
 
-  private static statusFromDto(status: string): StatutConversation {
+  private static statusFromDto(status: string | null | undefined): StatutConversation {
+    if (status===null || status ===undefined) {
+      return 'ouverte'
+    }
     switch (status.toUpperCase()) {
-      case 'RESOLVED':
-      case 'RESOLUE':
-        return 'resolue';
+      case 'WAITING_FOR_ADMIN':
       case 'PENDING':
       case 'EN_ATTENTE':
         return 'en_attente';
+      case 'RESOLVED':
+      case 'RESOLUE':
+        return 'resolue';
+      case 'ACTIVE':
+      case 'OPEN':
+      case 'OUVERTE':
       default:
         return 'ouverte';
     }

@@ -1,5 +1,16 @@
-import { Component, inject, signal, computed, ElementRef, viewChild, effect } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  ElementRef,
+  viewChild,
+  effect,
+  DestroyRef,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SupportMessagingStoreService } from '../../service/store/support/support-messaging-store.service';
 import { StatutConversation } from '../../models/messaging';
 
@@ -12,16 +23,23 @@ import { StatutConversation } from '../../models/messaging';
 })
 export class Messaging {
   private readonly messagingStore = inject(SupportMessagingStoreService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly zoneMessages = viewChild<ElementRef<HTMLDivElement>>('zoneMessages');
 
   readonly conversations = this.messagingStore.conversations;
   readonly isLoading = this.messagingStore.isLoading;
+  readonly storeError = this.messagingStore.error;
   readonly recherche = signal('');
   readonly filtreStatut = signal<'toutes' | StatutConversation>('toutes');
   readonly conversationActiveId = signal<string | null>(null);
   readonly vueMobile = signal<'liste' | 'discussion'>('liste');
   readonly panneauContactOuvert = signal(false);
   readonly brouillon = signal('');
+  readonly emailTransfert = signal('');
+  readonly transfertEnCours = signal(false);
+  readonly transfertMessage = signal<string | null>(null);
 
   readonly conversationsFiltrees = computed(() => {
     const terme = this.recherche().trim().toLowerCase();
@@ -51,6 +69,14 @@ export class Messaging {
 
   constructor() {
     void this.messagingStore.loadPage();
+
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const conversationId = params.get('conversationId');
+      if (conversationId && conversationId !== this.conversationActiveId()) {
+        void this.ouvrirConversation(conversationId);
+      }
+    });
+
     effect(() => {
       this.messagesActifs();
       queueMicrotask(() => {
@@ -63,11 +89,23 @@ export class Messaging {
   async ouvrirConversation(id: string) {
     this.conversationActiveId.set(id);
     this.vueMobile.set('discussion');
+    this.transfertMessage.set(null);
+    this.emailTransfert.set('');
     this.messagingStore.markAsRead(id);
     await Promise.all([
       this.messagingStore.loadConversation(id),
       this.messagingStore.loadMessages(id),
     ]);
+
+    const current = this.route.snapshot.queryParamMap.get('conversationId');
+    if (current !== id) {
+      await this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { conversationId: id },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   retourALaListe() {
@@ -85,10 +123,32 @@ export class Messaging {
     if (await this.messagingStore.sendMessage(id, texte)) this.brouillon.set('');
   }
 
+  async transferer() {
+    const id = this.conversationActiveId();
+    const email = this.emailTransfert().trim();
+    if (!id || !email || !this.conversationActive()?.canWrite) return;
+
+    this.transfertEnCours.set(true);
+    this.transfertMessage.set(null);
+    try {
+      const ok = await this.messagingStore.transfer(id, email);
+      if (ok) {
+        this.transfertMessage.set('Demande de transfert envoyée.');
+        this.emailTransfert.set('');
+      } else {
+        this.transfertMessage.set(
+          this.messagingStore.error() ?? 'Échec du transfert de la conversation',
+        );
+      }
+    } finally {
+      this.transfertEnCours.set(false);
+    }
+  }
+
   gererTouche(evenement: KeyboardEvent) {
     if (evenement.key === 'Enter' && !evenement.shiftKey) {
       evenement.preventDefault();
-      this.envoyer();
+      void this.envoyer();
     }
   }
 

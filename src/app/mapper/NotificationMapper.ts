@@ -1,15 +1,25 @@
-import {NotificationResponseDTO} from '../models/DTO/notifications/NotificationDto';
-import {NotificationItem} from '../models/notification/notificationItem';
+import { NotificationResponseDTO } from '../models/DTO/notifications/NotificationDto';
+import { NotificationItem } from '../models/notification/notificationItem';
 
+export type MappedNotification = NotificationItem & {
+  read: boolean;
+  referenceId: number | null;
+  actionLink: string | null;
+  originalType: string;
+};
 
 export class NotificationMapper {
-  static toClient(dto: NotificationResponseDTO): NotificationItem & { read: boolean, referenceId: number | null, originalType: string } {
-    let type: 'stock' | 'vente' | 'systeme' = 'systeme';
+  static toClient(dto: NotificationResponseDTO): MappedNotification {
+    let type: NotificationItem['type'] = 'systeme';
 
     if (dto.type === 'NEW_SALE') {
       type = 'vente';
-    } else if (dto.type === 'NEW_CHARGE') {
-      type = 'systeme';
+    } else if (
+      dto.type === 'SUPPORT_CLAIM_REQUEST' ||
+      dto.type === 'SUPPORT_TRANSFER_REQUEST' ||
+      dto.type === 'SUPPORT_NEW_MESSAGE'
+    ) {
+      type = 'support';
     }
 
     let timeStr = '';
@@ -22,7 +32,7 @@ export class NotificationMapper {
       const diffDays = Math.round(diffHours / 24);
 
       if (diffMins < 1) {
-        timeStr = 'À l\'instant';
+        timeStr = "À l'instant";
       } else if (diffMins < 60) {
         timeStr = `Il y a ${diffMins} min`;
       } else if (diffHours < 24) {
@@ -35,10 +45,10 @@ export class NotificationMapper {
         timeStr = new Intl.DateTimeFormat('fr-FR', {
           day: 'numeric',
           month: 'short',
-          year: 'numeric'
+          year: 'numeric',
         }).format(date);
       }
-    } catch (e) {
+    } catch {
       timeStr = dto.createdAt;
     }
 
@@ -47,10 +57,11 @@ export class NotificationMapper {
       title: dto.title,
       detail: dto.message,
       time: timeStr,
-      type: type,
+      type,
       read: dto.read,
       referenceId: dto.referenceId,
-      originalType: dto.type
+      actionLink: dto.actionLink ?? null,
+      originalType: dto.type,
     };
   }
 }
