@@ -19,8 +19,10 @@ export class Messaging {
   readonly filtreStatut = signal<'toutes' | StatutConversation>('toutes');
   readonly conversationActiveId = signal<string | null>(null);
   readonly vueMobile = signal<'liste' | 'discussion'>('liste');
-  readonly panneauContactOuvert = signal(false);
   readonly brouillon = signal('');
+
+  // --- Panneau "Informations du compte" : fermé par défaut, ouvrable/fermable partout ---
+  readonly panneauContactOuvert = signal(false);
 
   // --- Menus contextuels style WhatsApp ---
   readonly menuMessageOuvertId = signal<string | null>(null);
@@ -47,6 +49,9 @@ export class Messaging {
     this.conversations().find((c) => c.id === this.conversationActiveId()) ?? null
   );
 
+  // Le panneau n'est "visible" que s'il est demandé ET qu'une conversation est sélectionnée
+  readonly contactVisible = computed(() => this.panneauContactOuvert() && !!this.conversationActive());
+
   readonly messagesActifs = computed(() => {
     const id = this.conversationActiveId();
     return id ? this.messagingService.messagesDe(id)() : [];
@@ -70,6 +75,13 @@ export class Messaging {
     this.menuConversationOuvert.set(false);
   }
 
+  // Touche Échap : ferme les menus et le panneau d'informations
+  @HostListener('document:keydown.escape')
+  fermerAvecEchap() {
+    this.fermerTousLesMenus();
+    this.panneauContactOuvert.set(false);
+  }
+
   ouvrirConversation(id: string) {
     this.conversationActiveId.set(id);
     this.vueMobile.set('discussion');
@@ -77,8 +89,14 @@ export class Messaging {
     this.messageEnEditionId.set(null);
   }
 
-  retourALaListe() { this.vueMobile.set('liste'); }
-  toggleContact() { this.panneauContactOuvert.update((v) => !v); }
+  retourALaListe() {
+    this.vueMobile.set('liste');
+    this.panneauContactOuvert.set(false);
+  }
+
+  toggleContact() {
+    this.panneauContactOuvert.update((v) => !v);
+  }
 
   // --- Menu par message ---
   toggleMenuMessage(evenement: Event, messageId: string) {
@@ -122,6 +140,12 @@ export class Messaging {
     this.menuConversationOuvert.update((v) => !v);
   }
 
+  marquerEnAttente(evenement: Event, conversationId: string) {
+    evenement.stopPropagation();
+    this.messagingService.changerStatut(conversationId, 'en_attente');
+    this.menuConversationOuvert.set(false);
+  }
+
   marquerCommeResolue(evenement: Event, conversationId: string) {
     evenement.stopPropagation();
     this.messagingService.changerStatut(conversationId, 'resolue');
@@ -146,6 +170,7 @@ export class Messaging {
     this.messagingService.supprimerConversation(conversationId);
     this.conversationActiveId.set(null);
     this.vueMobile.set('liste');
+    this.panneauContactOuvert.set(false);
     this.menuConversationOuvert.set(false);
   }
 
@@ -153,7 +178,16 @@ export class Messaging {
     const texte = this.brouillon().trim();
     const id = this.conversationActiveId();
     if (!texte || !id) return;
+
+    // On lit le statut AVANT l'envoi, puis on bascule en attente si la conversation était ouverte
+    const statutAvant = this.conversationActive()?.statut;
+
     this.messagingService.envoyerMessage(id, texte);
+
+    if (statutAvant === 'ouverte') {
+      this.messagingService.changerStatut(id, 'en_attente');
+    }
+
     this.brouillon.set('');
   }
 

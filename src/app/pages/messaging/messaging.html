@@ -1,4 +1,4 @@
-<div class="msg-app">
+<div class="msg-app" [class.msg-app--contact-ouvert]="contactVisible()">
 
   <div class="msg-list-pane" [class.msg-list-pane--hidden-mobile]="vueMobile() === 'discussion'">
     <div class="msg-list-header">
@@ -81,6 +81,9 @@
           </button>
           @if (menuConversationOuvert()) {
             <div class="msg-menu" (click)="$event.stopPropagation()">
+              @if (conv.statut !== 'en_attente') {
+                <button type="button" (click)="marquerEnAttente($event, conv.id)">Mettre en attente</button>
+              }
               @if (conv.statut !== 'resolue') {
                 <button type="button" (click)="marquerCommeResolue($event, conv.id)">Marquer comme résolue</button>
               } @else {
@@ -94,7 +97,16 @@
           }
         </div>
 
-        <button class="msg-icon-btn" type="button" (click)="toggleContact()" aria-label="Infos utilisateur">
+        <!-- Ouvre / ferme le panneau d'informations du compte (toutes tailles d'écran) -->
+        <button
+          class="msg-icon-btn"
+          [class.actif]="contactVisible()"
+          type="button"
+          (click)="toggleContact()"
+          [attr.aria-expanded]="contactVisible()"
+          aria-label="Informations du compte"
+          title="Informations du compte"
+        >
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.6 3.1-6.3 7-6.3s7 2.7 7 6.3"/>
           </svg>
@@ -176,10 +188,15 @@
   </div>
 
   @if (conversationActive(); as conv) {
-    <div class="msg-contact-pane" [class.msg-contact-pane--ouvert]="panneauContactOuvert()">
+    <!-- Fond sombre cliquable : visible uniquement sur tablette/mobile quand le panneau est ouvert -->
+    @if (contactVisible()) {
+      <div class="msg-contact-backdrop" (click)="toggleContact()"></div>
+    }
+
+    <aside class="msg-contact-pane" [class.msg-contact-pane--ouvert]="contactVisible()">
       <div class="msg-contact-header">
         <span>Informations du compte</span>
-        <button type="button" class="msg-contact-close" (click)="toggleContact()" aria-label="Fermer">
+        <button type="button" class="msg-contact-close" (click)="toggleContact()" aria-label="Fermer le panneau">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -194,6 +211,6 @@
         @if (conv.utilisateur.niu) { <div class="msg-contact-field"><span>NIU</span><strong>{{ conv.utilisateur.niu }}</strong></div> }
         <div class="msg-contact-field"><span>Client depuis</span><strong>{{ conv.utilisateur.dateInscription }}</strong></div>
       </div>
-    </div>
+    </aside>
   }
 </div>

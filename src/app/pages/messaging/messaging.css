@@ -5,16 +5,39 @@
   color: var(--color-text);
 }
 
+/* ============================================================
+   CONTENEUR PRINCIPAL
+   - 2 colonnes par défaut (liste + discussion)
+   - 3 colonnes seulement quand le panneau d'infos est ouvert
+   - la ligne de grille est bornée : la barre de saisie reste visible
+   ============================================================ */
 .msg-app {
   display: grid;
-  grid-template-columns: 328px 1fr 280px;
-  height: calc(100vh - 100px);
+  grid-template-columns: 328px 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  height: calc(100dvh - 100px);
   min-height: 560px;
   border: 1px solid var(--color-border);
   border-radius: 14px;
   overflow: hidden;
   background: var(--color-background);
   box-shadow: 0 4px 18px -8px rgba(0, 0, 0, 0.35);
+}
+.msg-app--contact-ouvert { grid-template-columns: 328px 1fr 280px; }
+
+/* Autorise les colonnes et les zones défilantes à rétrécir */
+.msg-list-pane,
+.msg-thread-pane,
+.msg-contact-pane,
+.msg-conv-list,
+.msg-thread-body {
+  min-height: 0;
+}
+
+@keyframes msg-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes msg-contact-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ============================================================
@@ -26,6 +49,7 @@
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
   min-width: 0;
+  overflow: hidden;
 }
 
 .msg-list-header {
@@ -34,6 +58,7 @@
   justify-content: space-between;
   gap: 0.6rem;
   padding: 1.25rem 1.25rem 0.9rem;
+  flex-shrink: 0;
 }
 .msg-list-header h2 { margin: 0; font-size: 1.1rem; font-weight: var(--font-weight-bold); color: var(--color-text); }
 .msg-list-count { font-size: 0.72rem; color: var(--color-text-muted); }
@@ -58,6 +83,7 @@
   border-radius: var(--radius-base);
   background: var(--color-background);
   color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 .msg-search input {
   border: none;
@@ -75,6 +101,7 @@
   gap: 0.4rem;
   padding: 0 1.15rem 0.9rem;
   overflow-x: auto;
+  flex-shrink: 0;
 }
 .msg-filter {
   flex-shrink: 0;
@@ -154,6 +181,17 @@
   margin-top: 0.15rem;
 }
 
+.msg-tag-bloque {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-negative);
+  background: var(--color-negative-subtle);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 .msg-empty {
   display: flex;
   flex-direction: column;
@@ -188,7 +226,13 @@
 /* ============================================================
    COLONNE 2 — Fil de discussion
    ============================================================ */
-.msg-thread-pane { display: flex; flex-direction: column; min-width: 0; background: var(--color-background); }
+.msg-thread-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-background);
+  overflow: hidden;
+}
 
 .msg-thread-header {
   display: flex;
@@ -197,6 +241,7 @@
   padding: 0.9rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+  flex-shrink: 0;
 }
 .msg-back { display: none; background: none; border: none; color: var(--color-text-muted); cursor: pointer; padding: 0.2rem; }
 .msg-thread-identity { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; flex: 1; }
@@ -218,22 +263,6 @@
 .msg-status--ouverte { background: var(--color-primary-subtle); color: var(--color-primary); }
 .msg-status--en_attente { background: var(--color-accent-subtle); color: var(--color-accent); }
 .msg-status--resolue { background: var(--color-border); color: var(--color-text-muted); }
-
-.msg-toggle-contact {
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  width: 33px;
-  height: 33px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-.msg-toggle-contact:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 .msg-thread-body {
   flex: 1;
@@ -279,7 +308,7 @@
   border-color: var(--color-primary);
   border-radius: 14px 14px 3px 14px;
 }
-.msg-bubble p { margin: 0; font-size: 0.86rem; color: var(--color-text); line-height: 1.45; white-space: pre-wrap; }
+.msg-bubble p { margin: 0; font-size: 0.86rem; color: var(--color-text); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg-bubble--admin p { color: var(--color-on-brand); }
 .msg-bubble-time { display: block; margin-top: 0.35rem; font-size: 0.65rem; color: var(--color-text-muted); text-align: right; }
 .msg-bubble--admin .msg-bubble-time { color: rgba(255, 255, 255, 0.75); }
@@ -291,6 +320,8 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  padding: 1rem;
+  text-align: center;
   color: var(--color-text-muted);
 }
 .msg-thread-placeholder-icon {
@@ -308,6 +339,7 @@
 .msg-thread-placeholder p { margin: 0; font-size: 0.88rem; font-weight: var(--font-weight-medium); color: var(--color-text); }
 .msg-thread-placeholder span { font-size: 0.78rem; }
 
+/* Barre de saisie : toujours visible en bas */
 .msg-composer {
   display: flex;
   align-items: flex-end;
@@ -315,9 +347,11 @@
   padding: 0.9rem 1.25rem;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
+  flex-shrink: 0;
 }
 .msg-composer textarea {
   flex: 1;
+  min-width: 0;
   resize: none;
   max-height: 120px;
   border: 1px solid var(--color-border);
@@ -350,79 +384,8 @@
 .msg-send:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ============================================================
-   COLONNE 3 — Infos contact
+   BOUTONS ICÔNES + MENUS
    ============================================================ */
-.msg-contact-pane {
-  border-left: 1px solid var(--color-border);
-  background: var(--color-surface);
-  padding: 1.25rem;
-  overflow-y: auto;
-}
-.msg-contact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; }
-.msg-contact-header span { font-size: 0.7rem; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); }
-.msg-contact-close { display: none; background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
-
-.msg-contact-profile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0 1.3rem;
-  text-align: center;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 1.1rem;
-}
-.msg-contact-profile strong { font-size: 0.94rem; color: var(--color-text); }
-.msg-contact-commerce { font-size: 0.78rem; color: var(--color-text-muted); }
-
-.msg-contact-fields { display: flex; flex-direction: column; gap: 0.75rem; }
-.msg-contact-field { display: flex; flex-direction: column; gap: 0.18rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--color-border); }
-.msg-contact-field:last-child { border-bottom: none; padding-bottom: 0; }
-.msg-contact-field span { font-size: 0.68rem; color: var(--color-text-muted); }
-.msg-contact-field strong { font-size: 0.83rem; color: var(--color-text); word-break: break-word; font-weight: var(--font-weight-medium); }
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 1100px) {
-  .msg-app { grid-template-columns: 300px 1fr; }
-  .msg-contact-pane {
-    position: fixed;
-    right: 0; top: 0; bottom: 0;
-    width: 300px;
-    z-index: 40;
-    transform: translateX(100%);
-    transition: transform 0.25s ease;
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
-  }
-  .msg-contact-pane--ouvert { transform: translateX(0); }
-  .msg-contact-close { display: inline-flex; align-items: center; justify-content: center; }
-}
-
-@media (max-width: 760px) {
-  .msg-app {
-    grid-template-columns: 1fr;
-    height: calc(100vh - 76px);
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
-  .msg-list-pane, .msg-thread-pane { display: flex; }
-  .msg-list-pane--hidden-mobile, .msg-thread-pane--hidden-mobile { display: none; }
-  .msg-back { display: inline-flex; align-items: center; justify-content: center; }
-  .msg-bubble { max-width: 84%; }
-}
-.msg-tag-bloque {
-  display: inline-block;
-  margin-left: 0.4rem;
-  font-size: 0.62rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-negative);
-  background: var(--color-negative-subtle);
-  border-radius: 999px;
-  padding: 1px 7px;
-}
-
 .msg-icon-btn {
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -438,6 +401,12 @@
   transition: all 0.15s ease;
 }
 .msg-icon-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+/* Bouton "infos du compte" quand le panneau est ouvert */
+.msg-icon-btn.actif {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
 
 .msg-menu-wrap { position: relative; }
 .msg-menu {
@@ -487,6 +456,11 @@
 .msg-bubble-row:hover .msg-bubble-menu-btn { opacity: 1; }
 .msg-bubble-menu-btn:hover { background: var(--color-border); }
 
+/* Écrans tactiles : pas de survol, le bouton ⋮ reste donc visible */
+@media (hover: none) {
+  .msg-bubble-menu-btn { opacity: 1; }
+}
+
 .msg-menu-wrap--message .msg-menu { top: 0; right: auto; left: calc(100% + 4px); min-width: 150px; }
 .msg-menu--gauche { left: auto; right: calc(100% + 4px); }
 
@@ -514,3 +488,151 @@
 }
 .msg-bubble:not(.msg-bubble--admin) .msg-edition-actions button { background: var(--color-border); }
 .msg-edition-valider { background: var(--color-primary) !important; color: var(--color-on-brand) !important; }
+
+/* ============================================================
+   COLONNE 3 — Infos du compte (repliable)
+   Ordinateur : 3e colonne, affichée seulement si ouverte
+   Tablette / mobile : panneau coulissant par-dessus (voir @media)
+   ============================================================ */
+.msg-contact-backdrop { display: none; }
+
+.msg-contact-pane {
+  display: none;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+.msg-contact-pane--ouvert {
+  display: block;
+  animation: msg-contact-in 0.2s ease;
+}
+
+.msg-contact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; }
+.msg-contact-header span { font-size: 0.7rem; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); }
+
+.msg-contact-close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.msg-contact-close:hover { border-color: var(--color-negative); color: var(--color-negative); background: var(--color-negative-subtle); }
+
+.msg-contact-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0 1.3rem;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.1rem;
+}
+.msg-contact-profile strong { font-size: 0.94rem; color: var(--color-text); }
+.msg-contact-commerce { font-size: 0.78rem; color: var(--color-text-muted); }
+
+.msg-contact-fields { display: flex; flex-direction: column; gap: 0.75rem; }
+.msg-contact-field { display: flex; flex-direction: column; gap: 0.18rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--color-border); }
+.msg-contact-field:last-child { border-bottom: none; padding-bottom: 0; }
+.msg-contact-field span { font-size: 0.68rem; color: var(--color-text-muted); }
+.msg-contact-field strong { font-size: 0.83rem; color: var(--color-text); word-break: break-word; font-weight: var(--font-weight-medium); }
+
+/* ============================================================
+   RESPONSIVE — TABLETTE (≤ 1100px)
+   Le panneau d'infos devient un tiroir par-dessus la page
+   ============================================================ */
+@media (max-width: 1100px) {
+  .msg-app,
+  .msg-app.msg-app--contact-ouvert { grid-template-columns: 300px 1fr; }
+
+  .msg-contact-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    animation: msg-fade-in 0.2s ease;
+  }
+
+  .msg-contact-pane {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 90vw);
+    z-index: 1000;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+    animation: none;
+  }
+  .msg-contact-pane--ouvert {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.25s ease, visibility 0s;
+    animation: none;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE (≤ 760px)
+   Une seule colonne : liste OU discussion
+   ============================================================ */
+@media (max-width: 760px) {
+  .msg-app,
+  .msg-app.msg-app--contact-ouvert {
+    grid-template-columns: 1fr;
+    height: calc(100dvh - 76px);
+    min-height: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .msg-list-pane, .msg-thread-pane { display: flex; }
+  .msg-list-pane--hidden-mobile, .msg-thread-pane--hidden-mobile { display: none; }
+  .msg-back { display: inline-flex; align-items: center; justify-content: center; }
+
+  .msg-bubble { max-width: 84%; }
+  .msg-bubble-wrap { max-width: 90%; }
+
+  /* Menus des messages : s'ouvrent sous le bouton ⋮ pour ne jamais déborder de l'écran */
+  .msg-menu-wrap--message .msg-menu { top: calc(100% + 4px); right: 0; left: auto; }
+  .msg-menu--gauche { right: auto; left: 0; }
+
+  /* 16px minimum : évite le zoom automatique d'iOS quand on touche un champ */
+  .msg-composer textarea,
+  .msg-search input,
+  .msg-bubble--edition textarea { font-size: 1rem; }
+
+  /* Barre de saisie au-dessus de la zone gestuelle des téléphones */
+  .msg-composer { padding-bottom: max(0.9rem, env(safe-area-inset-bottom)); }
+}
+
+/* ============================================================
+   RESPONSIVE — PETITS TÉLÉPHONES (≤ 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .msg-list-header { padding: 1rem 1rem 0.8rem; }
+  .msg-search { margin: 0 1rem 0.8rem; }
+  .msg-filters { padding: 0 1rem 0.8rem; }
+  .msg-conv-item { padding: 0.85rem 1rem; }
+
+  .msg-thread-header { padding: 0.7rem 0.75rem; gap: 0.5rem; }
+  .msg-thread-header .msg-avatar--sm { display: none; }
+  .msg-status { padding: 3px 8px; font-size: 0.66rem; }
+
+  .msg-thread-body { padding: 1rem 0.8rem; }
+  .msg-composer { padding: 0.7rem 0.75rem; padding-bottom: max(0.7rem, env(safe-area-inset-bottom)); }
+}
