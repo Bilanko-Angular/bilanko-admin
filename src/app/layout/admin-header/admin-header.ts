@@ -19,8 +19,10 @@ export class AdminHeaderComponent {
   private searchService = inject(SearchService);
   protected themeService = inject(ThemeService);
 
-  toggleMenu = output<void>();
+ readonly toggleMenu = output<void>();
   profileOpen = signal(false);
+
+ 
 
   // Exposer le terme de recherche via un getter public
   get searchTerm() {

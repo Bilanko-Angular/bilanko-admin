@@ -1,9 +1,10 @@
-<div class="bk-shell d-flex">
-  <app-admin-aside />
-  <div class="bk-shell__main flex-grow-1">
-    <app-admin-header />
-    <main class="bk-shell__content">
-      <router-outlet />
-    </main>
+<div class="layout">
+  <app-admin-aside #asideRef></app-admin-aside>
+
+  <div class="main-section">
+    <app-admin-header (toggleMenu)="toggleMenu()"></app-admin-header>
+    <div class="content">
+      <router-outlet></router-outlet>
+    </div>
   </div>
 </div>

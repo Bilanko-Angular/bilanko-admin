@@ -1,13 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AdminAsideComponent } from '../admin-aside/admin-aside';
 import { AdminHeaderComponent } from '../admin-header/admin-header';
+import { AdminAsideComponent } from '../admin-aside/admin-aside';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterOutlet, AdminAsideComponent, AdminHeaderComponent],
+  imports: [RouterOutlet, AdminHeaderComponent, AdminAsideComponent],
   templateUrl: './admin-layout.html',
-  styleUrl: './admin-layout.css',
+  styleUrls: ['./admin-layout.css'],
 })
-export class AdminLayoutComponent {}
+export class AdminLayoutComponent {
+  @ViewChild('asideRef') asideRef!: AdminAsideComponent;
+
+  toggleMenu() {
+    this.asideRef?.toggleMenu();
+  }
+}
