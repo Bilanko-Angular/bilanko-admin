@@ -719,3 +719,94 @@
     font-size: 0.78rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════
+   SKELETONS — même structure, sans casser le layout
+   ═══════════════════════════════════════════════════ */
+@keyframes bk-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.bk-skel {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 0%,
+    color-mix(in srgb, var(--color-surface) 70%, var(--color-border)) 45%,
+    var(--color-border) 100%
+  );
+  background-size: 200% 100%;
+  animation: bk-shimmer 1.4s ease-in-out infinite;
+}
+
+.bk-skel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.bk-stat--skeleton {
+  pointer-events: none;
+}
+.bk-skel--icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-base);
+  flex-shrink: 0;
+}
+.bk-skel--label {
+  width: 88px;
+  height: 11px;
+}
+.bk-skel--value {
+  width: 48px;
+  height: 22px;
+}
+
+.bk-row--skeleton {
+  pointer-events: none;
+}
+.bk-row--skeleton td {
+  vertical-align: middle;
+}
+
+.bk-skel--avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.bk-skel--name  { width: 120px; height: 13px; }
+.bk-skel--email { width: 150px; height: 11px; }
+.bk-skel--phone { width: 90px;  height: 10px; }
+.bk-skel--badge { width: 90px;  height: 22px; border-radius: 999px; }
+.bk-skel--city  { width: 70px;  height: 12px; }
+.bk-skel--num   { width: 28px;  height: 12px; margin-left: auto; }
+.bk-skel--login { width: 80px;  height: 12px; }
+.bk-skel--action {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-base);
+}
+
+.bk-actions--skel {
+  justify-content: flex-end;
+}
+
+.bk-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-negative-subtle);
+  color: var(--color-negative);
+  border: 1px solid color-mix(in srgb, var(--color-negative) 25%, transparent);
+  border-radius: var(--radius-base);
+  font-size: 13.5px;
+}
+.bk-error-banner .material-icons { font-size: 1.2rem; }
+.bk-error-banner .bk-btn-reset { margin-left: auto; }

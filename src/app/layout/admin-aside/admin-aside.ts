@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { AuthStoreService } from '../../service/store/auth/auth-store.service';
 
 @Component({
   selector: 'app-admin-aside',
@@ -10,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./admin-aside.css'],
 })
 export class AdminAsideComponent {
-  private auth = inject(AuthService);
+  private auth = inject(AuthStoreService);
   private router = inject(Router);
 
   isOpen = signal(false);

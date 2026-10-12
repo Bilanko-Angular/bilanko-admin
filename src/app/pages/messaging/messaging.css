@@ -381,6 +381,52 @@
 .msg-contact-field span { font-size: 0.68rem; color: var(--color-text-muted); }
 .msg-contact-field strong { font-size: 0.83rem; color: var(--color-text); word-break: break-word; font-weight: var(--font-weight-medium); }
 
+.msg-transfer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.msg-transfer h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.msg-transfer p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+.msg-transfer input {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  background: var(--color-bg, transparent);
+  color: var(--color-text);
+}
+.msg-transfer button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  background: var(--color-primary);
+  color: var(--color-on-brand, #fff);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.msg-transfer button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.msg-transfer small {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
 /* ============================================================
    RESPONSIVE
    ============================================================ */

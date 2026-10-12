@@ -11,6 +11,7 @@ import { Sales } from './pages/sales/sales';
 import { Categories } from './pages/categories/categories';
 import { Documents } from './pages/documents/documents';
 import { Messaging } from './pages/messaging/messaging';
+import { SupportClaim } from './pages/support-claim/support-claim';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
@@ -27,6 +28,7 @@ export const routes: Routes = [
       { path: 'categories', component: Categories },
       { path: 'documents', component: Documents },
       { path: 'messaging', component: Messaging },
+      { path: 'admin/support/claim/:token', component: SupportClaim },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
