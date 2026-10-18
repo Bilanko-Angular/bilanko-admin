@@ -142,11 +142,17 @@
       <button class="bk-page-btn" [disabled]="saleService.actualIndex() === 0" (click)="goToPage(saleService.actualIndex())">
         <span class="material-icons">chevron_left</span>
       </button>
-      @for (p of [].constructor(saleService.totalPage()); track $index) {
-        <button class="bk-page-num" [class.active]="saleService.actualIndex() === $index" (click)="goToPage($index + 1)">
-          {{ $index + 1 }}
-        </button>
+
+      @for (p of pages(); track $index) {
+        @if (p === null) {
+          <span class="bk-page-ellipsis">…</span>
+        } @else {
+          <button class="bk-page-num" [class.active]="saleService.actualIndex() === p - 1" (click)="goToPage(p)">
+            {{ p }}
+          </button>
+        }
       }
+
       <button class="bk-page-btn" [disabled]="saleService.actualIndex() === saleService.totalPage() - 1" (click)="goToPage(saleService.actualIndex() + 2)">
         <span class="material-icons">chevron_right</span>
       </button>

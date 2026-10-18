@@ -171,4 +171,23 @@ export class Sales implements OnInit {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  readonly pages = computed<(number | null)[]>(() => {
+    const total = this.saleService.totalPage();
+    const current = this.saleService.actualIndex() + 1; // 1-based
+    const voisins = 1; // pages affichées de chaque côté de la page courante
+
+    const result: (number | null)[] = [];
+    let derniere = 0;
+
+    for (let p = 1; p <= total; p++) {
+      if (p === 1 || p === total || Math.abs(p - current) <= voisins) {
+        if (p - derniere === 2) result.push(derniere + 1); // un trou d'une seule page : on l'affiche
+        else if (p - derniere > 2) result.push(null);      // vrai trou : on met "…"
+        result.push(p);
+        derniere = p;
+      }
+    }
+    return result;
+  });
 }
