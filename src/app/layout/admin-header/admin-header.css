@@ -105,6 +105,10 @@
   background: var(--color-positive);
   border: 2px solid var(--color-background);
 }
+.bk-avatar__name{
+  display: flex;
+  flex-direction: column;
+}
 .bk-avatar__name strong {
   font-size: 0.75rem;
   color: var(--color-text);
@@ -157,8 +161,15 @@
   .bk-header__menu-btn { display: flex; }
 }
 @media (max-width: 768px) {
-  .bk-header { padding: 0.35rem 0.75rem; min-height: 56px; }
+  .bk-header {
+    padding: 0.35rem 0.75rem;
+    min-height: 56px;
+    justify-content: space-between;
+  }
   .bk-header-title { font-size: 0.95rem; }
+  .bk-header-info{
+    display: none;
+  }
 }
 
 

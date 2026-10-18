@@ -5,6 +5,7 @@ import { AuthStoreService } from '../../service/store/auth/auth-store.service';
 import { ThemeService } from '../../service/app/theme/theme.service';
 import { SearchService } from '../../service/app/search/search.service';
 import { NotificationsBell } from '../../components/notifications-bell/notifications-bell';
+import {UserStoreService} from '../../service/store/user/user-store.service';
 
 @Component({
   selector: 'app-admin-header',
@@ -18,6 +19,8 @@ export class AdminHeaderComponent {
   private router = inject(Router);
   private searchService = inject(SearchService);
   protected themeService = inject(ThemeService);
+  private userStore =inject(UserStoreService);
+  user=this.userStore.user
 
  readonly toggleMenu = output<void>();
   profileOpen = signal(false);
