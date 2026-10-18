@@ -180,21 +180,23 @@
 
       <div class="msg-thread-body" #zoneMessages>
         <div class="msg-day-divider"><span>Aujourd'hui</span></div>
-        @for (m of messagesActifs(); track m.id) {
-          <div class="msg-bubble-row" [class.msg-bubble-row--admin]="m.auteur === 'admin'">
-            @if (m.auteur === 'utilisateur') {
-              <span
-                class="msg-avatar msg-avatar--xs"
-                [style.background]="conv.utilisateur.avatarCouleur"
-                >{{ initiales(conv.utilisateur.nom) }}</span
-              >
-            }
-            <div class="msg-bubble" [class.msg-bubble--admin]="m.auteur === 'admin'">
-              <p>{{ m.contenu }}</p>
-              <span class="msg-bubble-time">{{ heure(m.envoyeLe) }}</span>
+        <div class="d-flex flex-column gap-2">
+          @for (m of messagesActifs(); track m.id) {
+            <div class="msg-bubble-row" [class.msg-bubble-row--admin]="m.auteur === 'admin'">
+              @if (m.auteur === 'utilisateur') {
+                <span
+                  class="msg-avatar msg-avatar--xs"
+                  [style.background]="conv.utilisateur.avatarCouleur"
+                  >{{ initiales(conv.utilisateur.nom) }}</span
+                >
+              }
+              <div class="msg-bubble" [class.msg-bubble--admin]="m.auteur === 'admin'">
+                <p>{{ m.contenu }}</p>
+                <span class="msg-bubble-time">{{ heure(m.envoyeLe) }}</span>
+              </div>
             </div>
-          </div>
-        }
+          }
+        </div>
       </div>
 
       <div class="msg-composer">
