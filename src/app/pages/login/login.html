@@ -71,8 +71,8 @@
           }
         </div>
 
-        <button type="submit" class="btn bk-btn-submit w-100 d-flex align-items-center justify-content-center gap-2" [disabled]="loginForm.invalid || isLoading">
-          @if (isLoading) {
+        <button type="submit" class="btn bk-btn-submit w-100 d-flex align-items-center justify-content-center gap-2" [disabled]="loginForm.invalid || isLoading()">
+          @if (isLoading()) {
             <span class="bk-spinner"></span>
             <span>Connexion...</span>
           } @else {

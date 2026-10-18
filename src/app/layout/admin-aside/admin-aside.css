@@ -22,7 +22,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px;
-  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
   min-height: 76px;
 }
@@ -191,7 +190,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
+  }
+  .bk-aside-user-name:first-letter{
+    text-transform: uppercase;
+  }
 .bk-aside-user-mail {
   margin: 1px 0 0;
   font-size: 0.68rem;

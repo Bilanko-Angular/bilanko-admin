@@ -1,22 +1,24 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthStoreService } from '../../service/store/auth/auth-store.service';
+import {UserStoreService} from '../../service/store/user/user-store.service';
+import {UpperCasePipe} from '@angular/common';
 
 @Component({
   selector: 'app-admin-aside',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, UpperCasePipe],
   templateUrl: './admin-aside.html',
   styleUrls: ['./admin-aside.css'],
 })
 export class AdminAsideComponent {
   private auth = inject(AuthStoreService);
   private router = inject(Router);
-
+  private userStore =inject(UserStoreService);
+  user=this.userStore.user
   isOpen = signal(false);
+  readonly profileImageError = signal(false);
 
-  userCount = 128;
-  adminInitials = 'AD';
 
   openMenu() {
     this.isOpen.set(true);
