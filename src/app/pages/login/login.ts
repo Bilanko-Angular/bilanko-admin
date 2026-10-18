@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {AuthStoreService} from '../../service/store/auth/auth-store.service';
 import {User} from '../../models/person';
+import {ActionResponseService} from '../../service/app/action-response/action-response.service';
 
 @Component({
   selector: 'app-login',
@@ -15,6 +16,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthStoreService);
   private router = inject(Router);
+  private action =inject(ActionResponseService)
 
   loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -22,7 +24,7 @@ export class LoginComponent {
   });
 
   error: string | null = null;
-  isLoading = false;
+  isLoading = signal(false);
   showPassword = signal(false);
   private loginError = '';
 
@@ -35,7 +37,7 @@ export class LoginComponent {
       this.loginForm.markAllAsTouched();
       return;
     }
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.error = null;
     const formValue = this.loginForm.value;
     const user: User = {
@@ -48,8 +50,10 @@ export class LoginComponent {
       await this.router.navigate(['/dashboard']);
     } catch (error: any) {
       this.loginError = error?.message || 'Identifiants incorrects ou erreur serveur.';
+      this.action.error("Identifiants incorrects ou erreur serveur.");
+
     } finally {
-      this.isLoading = false;
+      this.isLoading.set(false);
     }
   }
 }
