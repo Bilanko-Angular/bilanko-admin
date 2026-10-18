@@ -36,7 +36,6 @@
         <a routerLink="/users" routerLinkActive="active" class="nav-link" (click)="closeMenu()">
           <span class="material-icons">group</span>
           <span>Utilisateurs</span>
-          <span class="bk-nav-badge">{{ userCount }}</span>
         </a>
       </li>
       <li class="nav-item">
@@ -89,12 +88,18 @@
   <!-- ✅ FOOTER : Profil + Déconnexion (comme bilanko-frontend) -->
   <div class="bk-aside-footer">
     <div class="bk-aside-user">
-      <div class="bk-aside-avatar">
-        {{ adminInitials }}
-      </div>
+      @if (user()?.profilePicture && !profileImageError()) {
+        <div class="rounded-circle shadow-sm overflow-hidden flex-shrink-0" style="width: 32px; height: 32px;">
+          <img [src]="user()?.profilePicture" alt="Profile" class="w-100 h-100 object-fit-cover" (error)="profileImageError.set(true)">
+        </div>
+      } @else {
+        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0 shadow-sm" style="width: 32px; height: 32px; font-size: 0.7rem;">
+          {{ (user()?.nom?.charAt(0) || '') + (user()?.subname?.charAt(0) || '') | uppercase }}
+        </div>
+      }
       <div class="bk-aside-user-info">
-        <p class="bk-aside-user-name">Administrateur</p>
-        <p class="bk-aside-user-mail">admin&#64;bilanko.com</p>
+        <p class="bk-aside-user-name">{{user()?.nom}} </p>
+        <p class="bk-aside-user-mail">{{user()?.email}}</p>
       </div>
       <button
         class="bk-aside-logout"
